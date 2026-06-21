@@ -46,25 +46,104 @@ export interface JsonStore {
  * literal whose absolute value exceeds MAX_SAFE_INTEGER in double quotes
  * so it survives parsing as a string.
  *
- * The regex matches an optional sign + 15-19 digit run that sits in a
- * JSON value position (after `:`, `,`, `[`, or `{`, optionally preceded
- * by whitespace). Using a capture group for the prefix avoids the
- * variable-width lookbehind limitation.
+ * ## Correctness properties (learned the hard way — see CR #1)
+ *
+ * 1. **String-aware**: numbers appearing inside JSON string values must
+ *    NOT be quoted — they're already characters, not values. A naive
+ *    regex that ignores string context corrupts tables whose free-text
+ *    fields (CV bios, lore) happen to contain `", "` followed by a long
+ *    digit run.
+ *
+ * 2. **Unbounded digit length**: capping at 19 digits (int64 max) leaves
+ *    20+ digit literals half-quoted, producing invalid JSON. Any length
+ *    is allowed; BigInt handles arbitrary precision.
+ *
+ * 3. **Float-safe**: a number like `9.2e18` or `9007199254740999.5` is
+ *    a float, not an int — quoting its integer part produces invalid
+ *    JSON. We skip any number immediately followed by `.`, `e`, or `E`.
+ *
+ * The implementation scans the text once, tracking whether the cursor is
+ * inside a string. String parsing handles `\"` escapes and is the only
+ * way to be correct without a full JSON tokenizer.
  */
 function parseInt64Safe(text: string): string {
-  return text.replace(
-    /([,:[\{]\s*)(-?\d{15,19})/g,
-    (full, prefix: string, digits: string) => {
-      const n = BigInt(digits);
-      if (
-        n > BigInt(Number.MAX_SAFE_INTEGER) ||
-        n < BigInt(-Number.MAX_SAFE_INTEGER)
-      ) {
-        return `${prefix}"${digits}"`;
+  // We build the output character-by-character. This is O(n) and allocates
+  // one string; the alternative (regex with string-skip) can't be made
+  // correct without variable-width lookbehind, which JS doesn't support.
+  let out = "";
+  let i = 0;
+  const len = text.length;
+
+  while (i < len) {
+    const ch = text[i]!;
+
+    // String literal: copy verbatim until the closing unescaped quote.
+    if (ch === '"') {
+      out += ch;
+      i++;
+      while (i < len) {
+        const s = text[i]!;
+        out += s;
+        i++;
+        if (s === "\\") {
+          // Escaped char — copy the next char too, whatever it is.
+          if (i < len) {
+            out += text[i]!;
+            i++;
+          }
+        } else if (s === '"') {
+          break;
+        }
       }
-      return full;
-    },
-  );
+      continue;
+    }
+
+    // Potential number: starts with digit or sign+digit, in a value
+    // position (we're not inside a string, and the preceding non-ws char
+    // is one of `:`, `,`, `[`, `{`, or start-of-text).
+    if (ch === "-" || ch === "+" || (ch >= "0" && ch <= "9")) {
+      // Confirm this is a value position, not e.g. a bare `-` in text.
+      // Walk back past whitespace to find the structural char.
+      let j = i - 1;
+      while (j >= 0 && (text[j] === " " || text[j] === "\t" || text[j] === "\n" || text[j] === "\r")) {
+        j--;
+      }
+      const structural = j < 0 ? "{" : text[j]!; // start-of-text acts like object start
+      if (structural === ":" || structural === "," || structural === "[" || structural === "{") {
+        // Capture the full numeric token: sign + digits.
+        let numStart = i;
+        if (text[i] === "-" || text[i] === "+") i++;
+        const digitStart = i;
+        while (i < len && text[i] >= "0" && text[i] <= "9") i++;
+        const digitCount = i - digitStart;
+
+        // Skip floats entirely: a `.` or exponent means this isn't an int.
+        if (i < len && (text[i] === "." || text[i] === "e" || text[i] === "E")) {
+          out += text.substring(numStart, i);
+          continue; // let the main loop handle the fractional part
+        }
+
+        if (digitCount >= 15) {
+          const digits = text.substring(numStart, i);
+          const n = BigInt(digits);
+          if (
+            n > BigInt(Number.MAX_SAFE_INTEGER) ||
+            n < BigInt(-Number.MAX_SAFE_INTEGER)
+          ) {
+            out += `"${digits}"`;
+            continue;
+          }
+        }
+        out += text.substring(numStart, i);
+        continue;
+      }
+    }
+
+    out += ch;
+    i++;
+  }
+
+  return out;
 }
 
 function normalizePath(path: string): string {

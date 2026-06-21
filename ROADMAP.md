@@ -7,8 +7,8 @@ shipped features, see the TypeScript CHANGELOG (once established).
 
 ## Current Release
 
-- TypeScript: `0.1.0-dev.0` (skeleton, not yet tagged)
-- 6 public MCP tools (Wiki-only MVP)
+- TypeScript: `0.2.0-dev.0` (GameData domain in progress on `feat/v0.2.0-gamedata-skeleton`, not yet tagged)
+- 9 public MCP tools (6 Wiki + 3 GameData/characters)
 - Single implementation: TypeScript / Bun
 - See `STATUS.md` for the verification matrix
 

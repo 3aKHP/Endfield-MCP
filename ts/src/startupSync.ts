@@ -25,6 +25,8 @@ import {
   archiveSpecForDataset,
   GAMEDATA_TABLES,
 } from "./data/datasets.js";
+import { clearCharacterCaches } from "./data/characters.js";
+import { clearTextCaches } from "./data/texts.js";
 import {
   type SyncResult,
   syncReleaseArchive,
@@ -158,12 +160,13 @@ function makeTablesSyncRunner(
     const r = await syncReleaseArchive(archiveSpec);
     logSyncResult("GameData tables", r);
     if (r.status === "updated") {
-      // SCHEMA_TODO: once character/item/stage/enemy readers exist,
-      // call their clearXxxCaches() here so stale module-level caches
-      // don't leak after a data refresh. Pattern:
-      //   clearCharacterCaches();
-      //   clearItemCaches();
-      //   ...
+      // Drop stale in-memory caches so the next read picks up the freshly
+      // written files. Both layers must clear: text indices (i18n hash →
+      // string maps) and the character table projection.
+      clearTextCaches();
+      clearCharacterCaches();
+      // Future readers (item/enemy/stage) call their clearXxxCaches() here
+      // as they land.
     }
     return shouldRetrySync(r.status);
   };

@@ -115,8 +115,12 @@ export function loadLanguageIndex(lang: LanguageCode): Map<string, string> {
   if (cached !== undefined) return cached;
 
   // Mirror layout shortens I18nTextTable_CN.json → i18n/CN.json.
+  // readJsonInt64Safe is defense-in-depth: the current mirror ships i18n
+  // keys as JSON strings, but if upstream ever ships them as bare numeric
+  // literals (as it does for {id,text} ids in other tables), plain
+  // readJson would truncate the keys and silently break every lookup.
   const path = `i18n/${lang}.json`;
-  const raw = store().readJson<Record<string, string>>(path);
+  const raw = store().readJsonInt64Safe<Record<string, string>>(path);
   const index = new Map<string, string>();
   for (const [k, v] of Object.entries(raw)) {
     if (typeof v === "string") {

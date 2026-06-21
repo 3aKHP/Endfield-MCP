@@ -4,9 +4,40 @@ All notable changes to EndField-MCP (TypeScript implementation) are recorded
 here. Format follows [Keep a Changelog](https://keepachangelog.com/),
 versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [Unreleased] — v0.2.0 GameData domain
 
-### Added — v0.1.0 skeleton
+### Added
+
+- **GameData domain**: three new `ef_` tools over the Endfield character table.
+  - `ef_list_characters(lang?)` — 29 characters with resolved names, profession, rarity, charType, department.
+  - `ef_get_character_info(id_or_name, lang?)` — full detail including 4-language CV names.
+  - `ef_search_characters(pattern, max_results?, lang?)` — regex search across names, id, profession, charType, department.
+- **Self-hosted mirror** ([3aKHP/EndFieldGameData](https://github.com/3aKHP/EndFieldGameData)): v0.2.0 Release published with `endfield-tables.zip` (10 core tables + 5 localization languages, 23MB).
+- **Auto-sync** (`data/sync.ts`): GitHub Release sync with cascade fallback (`GITHUB_MIRRORS`), TTL cache, atomic write, offline fallback to cached data. Hash comparison skips download when release tag unchanged.
+- **Bundled fallback** (three-tier availability): `fetch-bundled-data.ts` build-time script populates `ts/data/endfield/`; `server.ts` wires `FallbackStore(primary=synced, fallback=bundled)`; CD pipeline (`.github/workflows/cd.yml`) injects bundled data before npm publish.
+- **i18n resolution layer** (`data/texts.ts`): Endfield separates values from localization — tables store `{id, text}` where `text` is empty and `id` is an int64 hash. This module owns the hash→string lookup across CN/EN/JP/TC/KR.
+- **int64-safe JSON parsing** (`stores.ts:readJsonInt64Safe`): Endfield's localization ids exceed `Number.MAX_SAFE_INTEGER`; plain `JSON.parse` silently truncates them. String-aware preprocessor wraps large integer literals in quotes before parsing.
+- **Character reader** (`data/characters.ts`): list/get/search projections with profession/rarity/charType/weaponType enum mapping and CV resolution.
+- **Sync orchestration** (`startupSync.ts`): single-flight locking, exponential backoff retries (30s/120s/600s), cache-clear cascade on successful refresh.
+- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish with provenance.
+- **Build/deploy scripts**: `fetch-bundled-data.ts`, `build-mirror-zip.ts` (forward-slash-enforcing packer), three smoke tests (`smoke-live`/`smoke-gamedata`/`smoke-sync`/`smoke-bundled-fallback`).
+- **Tests**: +24 (8 int64-safe parsing, 16 character reader). Total 90/90.
+
+### Changed
+
+- `server.ts` version bumped to `0.2.0-dev.0`; binds text store before character store (dependency order); builds FallbackStore based on which data directories exist.
+- `startupSync.ts` is no longer a no-op — real implementation with single-flight + retry + cache clearing.
+- `.gitignore`: replaced stale PRTS-MCP entries (`gamedata/`, `storyjson/`) with Endfield-specific rules.
+
+### Fixed
+
+- `parseInt64Safe` rewritten to be string-aware (numbers inside JSON string values are no longer corrupted), unbounded digit length (20+ digit literals no longer produce invalid JSON), and float-safe (numbers with `.` or exponent are skipped). Addresses CR #1 B1+B2.
+- `startupSync.ts` now calls `clearTextCaches()` + `clearCharacterCaches()` after a successful background refresh. Previously stale data was served until process restart. Addresses CR #1 B3.
+- `texts.ts:loadLanguageIndex` uses `readJsonInt64Safe` instead of `readJson` for defense-in-depth against future i18n key format changes. Addresses CR #1 B4.
+
+## [0.1.0-unreleased] — v0.1.0 skeleton
+
+### Added
 
 Initial project skeleton. End-to-end working Wiki MVP, no GameData domain
 yet.

@@ -140,3 +140,110 @@ describe("DirectoryStore.readJsonInt64Safe", () => {
     expect(data.outer.nested[0]!.small).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge cases from CR #1 — these were genuine bugs in the regex-based
+// implementation. The rewritten string-aware parser must handle them.
+// ---------------------------------------------------------------------------
+
+describe("readJsonInt64Safe — CR #1 edge cases", () => {
+  it("handles 20+ digit integers without producing invalid JSON (B1)", () => {
+    // Old regex capped at 19 digits, leaving the 20th dangling → invalid JSON.
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"big":12345678901234567890}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    const data = store.readJsonInt64Safe<{ big: string }>("test.json");
+    expect(data.big).toBe("12345678901234567890");
+  });
+
+  it("does not corrupt large floats (B1)", () => {
+    // Old regex quoted the integer part, leaving ".5" dangling → invalid JSON.
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"f":9200000000000000000.5}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    // Float survives as a number (JS can't represent it exactly, but it
+    // must not throw and must remain a number type).
+    const data = store.readJsonInt64Safe<{ f: number }>("test.json");
+    expect(typeof data.f).toBe("number");
+  });
+
+  it("does not corrupt large scientific-notation numbers (B1)", () => {
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"sci":9.2e18}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    const data = store.readJsonInt64Safe<{ sci: number }>("test.json");
+    expect(typeof data.sci).toBe("number");
+  });
+
+  it("does not touch large numbers inside string values (B2)", () => {
+    // Old regex matched `,` inside strings → corruption.
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"desc":"a, 9007199254740999 b"}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    const data = store.readJsonInt64Safe<{ desc: string }>("test.json");
+    expect(data.desc).toBe("a, 9007199254740999 b");
+  });
+
+  it("does not touch numbers inside strings with escaped quotes (B2)", () => {
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"s":"He said \\"9007199254740999\\" loudly"}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    const data = store.readJsonInt64Safe<{ s: string }>("test.json");
+    expect(data.s).toBe('He said "9007199254740999" loudly');
+  });
+
+  it("handles a realistic Endfield table with free-text + int64 ids (B2 integration)", () => {
+    // Mirrors the real CharacterTable shape: {id,text} objects (int64 id
+    // as bare number) alongside descriptive strings that may contain
+    // commas and numbers. The old regex would corrupt the description.
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"chr_0001_x":{"name":{"id":-7078064683023630592,"text":""},' +
+        '"desc":"某角色，编号001，出生于2000年"},"count":42}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    const data = store.readJsonInt64Safe<{
+      chr_0001_x: {
+        name: { id: string; text: string };
+        desc: string;
+      };
+      count: number;
+    }>("test.json");
+    expect(data.chr_0001_x.name.id).toBe("-7078064683023630592");
+    expect(data.chr_0001_x.desc).toBe("某角色，编号001，出生于2000年");
+    expect(data.count).toBe(42);
+  });
+
+  it("preserves valid JSON structure across mixed content", () => {
+    // Kitchen-sink test: int64 ids, safe ints, floats, strings with
+    // commas, nested objects, arrays. Parser must not throw.
+    writeFileSync(
+      join(tmpRoot, "test.json"),
+      '{"id":-7078064683023630592,"safe":42,"float":3.14,' +
+        '"arr":[-5913937456330954032,1,2],"text":"a, b, c",' +
+        '"nested":{"deep":9007199254740999,"ok":true}}',
+    );
+    const store = new DirectoryStore(tmpRoot);
+    // Should not throw — that's the main assertion.
+    const data = store.readJsonInt64Safe<Record<string, unknown>>("test.json");
+    expect(data["id"]).toBe("-7078064683023630592");
+    expect(data["safe"]).toBe(42);
+    expect(data["float"]).toBe(3.14);
+    expect((data["arr"] as unknown[])[0]).toBe("-5913937456330954032");
+    expect((data["arr"] as unknown[])[1]).toBe(1);
+    expect(data["text"]).toBe("a, b, c");
+    expect((data["nested"] as Record<string, unknown>)["deep"]).toBe(
+      "9007199254740999",
+    );
+  });
+});
