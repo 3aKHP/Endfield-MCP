@@ -7,13 +7,15 @@ dist/
 **/dist/
 *.tsbuildinfo
 
-# Runtime data (auto-synced from GitHub Releases or user-provided)
-data/gamedata/
-data/gamedata-levels/
-data/storyjson/
-ts/data/gamedata/
-ts/data/gamedata-levels/
-ts/data/storyjson/
+# Bundled game data — populated at build time by fetch-bundled-data.ts
+# (or the CD pipeline), never committed. Only the .gitkeep placeholder
+# and the directory structure are tracked.
+ts/data/endfield/tables/
+ts/data/endfield/i18n/
+ts/data/endfield/archives/
+
+# Runtime synced data (user data dir, never in repo)
+/data/endfield/
 
 # Local development scratch
 # /dev/ is anchored to repo root so it does NOT match docs/dev/ (developer docs).

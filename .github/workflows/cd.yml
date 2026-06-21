@@ -1,0 +1,86 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 0.2.0)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write  # for npm provenance
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-npm:
+    name: Publish npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        working-directory: ts
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: ts
+        run: bun run typecheck
+
+      - name: Test
+        working-directory: ts
+        run: bun test
+
+      - name: Build (tsc emit)
+        working-directory: ts
+        run: bun run build
+
+      # Fetch bundled game data into ts/data/endfield/ before packing.
+      # This snapshot serves as the read-only fallback layer when the
+      # auto-sync directory is empty or the network is unavailable.
+      - name: Fetch bundled game data
+        working-directory: ts
+        run: bun run scripts/fetch-bundled-data.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify bundled data populated
+        working-directory: ts
+        run: |
+          if [ ! -f data/endfield/tables/CharacterTable.json ]; then
+            echo "ERROR: bundled data not populated"
+            exit 1
+          fi
+          echo "bundled tables:"
+          ls data/endfield/tables/
+          ls data/endfield/i18n/
+
+      - name: Pack npm tarball
+        working-directory: ts
+        run: bun run build && npm pack
+
+      - name: Publish to npm
+        if: github.event_name == 'push'
+        working-directory: ts
+        run: |
+          npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: endfield-mcp-tarball
+          path: ts/*.tgz
+          retention-days: 30

@@ -17,14 +17,13 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { bindWikiConfig } from "./api/endfieldWiki.js";
 import { registerWikiTools } from "./tools/wikiTools.js";
 import { registerGamedataTools } from "./tools/gamedataTools.js";
 import { bindCharacterStore } from "./data/characters.js";
 import { bindTextStore } from "./data/texts.js";
-import { DirectoryStore } from "./data/stores.js";
+import { DirectoryStore, FallbackStore, type JsonStore } from "./data/stores.js";
 import { runStartupSync } from "./startupSync.js";
 import { runStdio } from "./transports/stdio.js";
 import { runHttp } from "./transports/http.js";
@@ -72,23 +71,49 @@ async function main(): Promise<void> {
   const cfg = loadConfig();
   bindWikiConfig(cfg);
 
-  // Bind the GameData store only when the data directory actually exists.
-  // In v0.2-dev (mirror schema not yet pinned) the directory is usually
-  // absent; character tools will surface their "schema pending" message
-  // rather than crash on a missing-store error. Once the mirror is live
-  // and sync has populated the directory, this binding becomes meaningful.
-  if (existsSync(cfg.dataPath)) {
-    const store = new DirectoryStore(cfg.dataPath);
-    // Text resolver must bind before character reader — the reader calls
-    // resolveText() during projections, which needs the i18n index loaded.
-    bindTextStore(store);
-    bindCharacterStore(store);
-    log("INFO", `GameData store bound to ${cfg.dataPath}`);
-  } else {
+  // Build the GameData store with a two-layer fallback chain:
+  //   primary  = auto-sync directory (cfg.dataPath, freshest when present)
+  //   fallback = bundled directory  (cfg.bundledDataPath, ships with the
+  //              npm package / Docker image, may be slightly stale)
+  //
+  // Both layers are optional; we bind whichever exist:
+  //   - both present  → FallbackStore(primary, bundled)
+  //   - only one      → that layer directly
+  //   - neither       → no binding; GameData tools report "no data"
+  const syncedExists = existsSync(cfg.dataPath);
+  const bundledExists = existsSync(cfg.bundledDataPath);
+
+  let dataStore: JsonStore | null = null;
+  if (syncedExists && bundledExists) {
+    dataStore = new FallbackStore(
+      new DirectoryStore(cfg.dataPath),
+      new DirectoryStore(cfg.bundledDataPath),
+    );
     log(
       "INFO",
-      `GameData path ${cfg.dataPath} does not exist; GameData tools will report "schema pending" until the mirror is synced.`,
+      `GameData store: FallbackStore(synced=${cfg.dataPath}, bundled=${cfg.bundledDataPath})`,
     );
+  } else if (syncedExists) {
+    dataStore = new DirectoryStore(cfg.dataPath);
+    log("INFO", `GameData store: synced only (${cfg.dataPath})`);
+  } else if (bundledExists) {
+    dataStore = new DirectoryStore(cfg.bundledDataPath);
+    log(
+      "WARN",
+      `GameData store: bundled only (${cfg.bundledDataPath}) — auto-sync dir absent, data may be stale.`,
+    );
+  } else {
+    log(
+      "WARN",
+      `No GameData available (synced=${cfg.dataPath} absent, bundled=${cfg.bundledDataPath} absent). GameData tools will report "no data" until the mirror is synced.`,
+    );
+  }
+
+  if (dataStore !== null) {
+    // Text resolver must bind before character reader — the reader calls
+    // resolveText() during projections, which needs the i18n index loaded.
+    bindTextStore(dataStore);
+    bindCharacterStore(dataStore);
   }
 
   log(

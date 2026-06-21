@@ -1,0 +1,16 @@
+# Bundled Endfield game data placeholder.
+#
+# This directory is empty in the git repo by design. It gets populated at
+# package-build time (see .github/workflows/cd.yml, step "fetch bundled data")
+# by downloading the latest endfield-tables.zip from 3aKHP/EndFieldGameData
+# and extracting it here. The resulting npm package / Docker image then
+# ships with a read-only data snapshot that serves as a fallback when the
+# auto-sync directory is empty or the network is unavailable.
+#
+# At runtime, server.ts wraps this in a FallbackStore:
+#   FallbackStore(primary=auto-sync-dir, fallback=./data/endfield)
+# so reads prefer fresh synced data but transparently fall through to the
+# bundled snapshot when synced files are missing.
+#
+# Do not commit actual data files here — they bloat the repo and go stale.
+# The CD pipeline is the single source of truth for bundled contents.
