@@ -18,6 +18,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync } from "node:fs";
 import { loadConfig } from "./config.js";
+import { createLogger } from "./utils/log.js";
 import { bindWikiConfig } from "./api/endfieldWiki.js";
 import { registerWikiTools } from "./tools/wikiTools.js";
 import { registerGamedataTools } from "./tools/gamedataTools.js";
@@ -35,10 +36,7 @@ import { runHttp } from "./transports/http.js";
 const SERVER_NAME = "Endfield_Wiki_Assistant";
 const SERVER_VERSION = "0.2.0-dev.0";
 
-function log(level: "INFO" | "WARN" | "ERROR", msg: string): void {
-  const ts = new Date().toISOString();
-  process.stderr.write(`${ts} ${level} ef.server: ${msg}\n`);
-}
+const log = createLogger("ef.server");
 
 // ---------------------------------------------------------------------------
 // MCP Server factory
@@ -71,50 +69,42 @@ async function main(): Promise<void> {
   const cfg = loadConfig();
   bindWikiConfig(cfg);
 
-  // Build the GameData store with a two-layer fallback chain:
+  // Build the GameData store as a two-layer FallbackStore:
   //   primary  = auto-sync directory (cfg.dataPath, freshest when present)
   //   fallback = bundled directory  (cfg.bundledDataPath, ships with the
   //              npm package / Docker image, may be slightly stale)
   //
-  // Both layers are optional; we bind whichever exist:
-  //   - both present  → FallbackStore(primary, bundled)
-  //   - only one      → that layer directly
-  //   - neither       → no binding; GameData tools report "no data"
+  // We always construct the FallbackStore (never a bare DirectoryStore)
+  // because the synced directory may not exist at startup but can be
+  // populated by a background sync moments later. DirectoryStore.exists()
+  // naturally returns false for a missing directory, so FallbackStore
+  // transparently falls through to bundled until sync writes files —
+  // and then automatically picks up the synced files on the next read
+  // (after cache clearing). A startup-time branch that binds a bare
+  // DirectoryStore(bundled) when synced is absent would permanently miss
+  // the later-synced data.
   const syncedExists = existsSync(cfg.dataPath);
   const bundledExists = existsSync(cfg.bundledDataPath);
 
-  let dataStore: JsonStore | null = null;
-  if (syncedExists && bundledExists) {
-    dataStore = new FallbackStore(
-      new DirectoryStore(cfg.dataPath),
-      new DirectoryStore(cfg.bundledDataPath),
-    );
-    log(
-      "INFO",
-      `GameData store: FallbackStore(synced=${cfg.dataPath}, bundled=${cfg.bundledDataPath})`,
-    );
-  } else if (syncedExists) {
-    dataStore = new DirectoryStore(cfg.dataPath);
-    log("INFO", `GameData store: synced only (${cfg.dataPath})`);
-  } else if (bundledExists) {
-    dataStore = new DirectoryStore(cfg.bundledDataPath);
+  const dataStore: JsonStore = new FallbackStore(
+    new DirectoryStore(cfg.dataPath),
+    new DirectoryStore(cfg.bundledDataPath),
+  );
+  log(
+    "INFO",
+    `GameData store: FallbackStore(synced=${cfg.dataPath}${syncedExists ? "" : " [absent]"}, bundled=${cfg.bundledDataPath}${bundledExists ? "" : " [absent]"})`,
+  );
+  if (!syncedExists && !bundledExists) {
     log(
       "WARN",
-      `GameData store: bundled only (${cfg.bundledDataPath}) — auto-sync dir absent, data may be stale.`,
-    );
-  } else {
-    log(
-      "WARN",
-      `No GameData available (synced=${cfg.dataPath} absent, bundled=${cfg.bundledDataPath} absent). GameData tools will report "no data" until the mirror is synced.`,
+      `No GameData available yet — both layers absent. GameData tools will report "no data" until the mirror is synced or bundled data is populated.`,
     );
   }
 
-  if (dataStore !== null) {
-    // Text resolver must bind before character reader — the reader calls
-    // resolveText() during projections, which needs the i18n index loaded.
-    bindTextStore(dataStore);
-    bindCharacterStore(dataStore);
-  }
+  // Text resolver must bind before character reader — the reader calls
+  // resolveText() during projections, which needs the i18n index loaded.
+  bindTextStore(dataStore);
+  bindCharacterStore(dataStore);
 
   log(
     "INFO",

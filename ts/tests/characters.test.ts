@@ -12,8 +12,8 @@
  *   - name lookup by id, CN name, and EN name
  */
 
-import { describe, it, expect, beforeEach } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { afterAll, describe, it, expect, beforeEach } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DirectoryStore } from "../src/data/stores.js";
@@ -27,6 +27,11 @@ import {
 } from "../src/data/characters.js";
 
 const TMP = mkdtempSync(join(tmpdir(), "ef-char-"));
+
+// Clean up the temp dir once after all tests in this file finish.
+afterAll(() => {
+  rmSync(TMP, { recursive: true, force: true });
+});
 
 // CharacterTable fixture. Written as a raw string template (not
 // JSON.stringify of a JS object) because the int64 name ids exceed

@@ -144,7 +144,8 @@ export function loadConfig(): Config {
 }
 
 /** Parse GITHUB_MIRRORS env var into proxy base URLs (trailing slash stripped). */
-function parseMirrors(raw: string): string[] {
+/** Parse a GITHUB_MIRRORS env string into proxy base URLs (trailing slash stripped). */
+export function parseMirrors(raw: string): string[] {
   return raw
     .split(",")
     .map((m) => m.trim())

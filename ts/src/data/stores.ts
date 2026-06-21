@@ -300,7 +300,11 @@ export class FallbackStore implements JsonStore {
   }
 
   readJson<T = unknown>(path: string): T {
-    return JSON.parse(this.readText(path)) as T;
+    const store = this.storeFor(path);
+    if (store === null) {
+      throw new Error(`Dataset file not found in fallback chain: ${path}`);
+    }
+    return store.readJson<T>(path);
   }
 
   readJsonInt64Safe<T = unknown>(path: string): T {

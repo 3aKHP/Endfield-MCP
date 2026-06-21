@@ -302,7 +302,16 @@ export function searchCharacters(
     const name = resolveText(e.name, lang, e.engName ?? id);
     const engName = e.engName ?? "";
     const profession = PROFESSION_NAMES_CN[e.profession] ?? "";
-    const charType = e.charTypeId ?? "";
+    const charTypeId = e.charTypeId ?? "";
+    // charType field is searchable by both the raw English id (e.g.
+    // "Physical") and the Chinese-mapped name (e.g. "物理"), so users
+    // searching in either language hit.
+    const charTypeCN = charTypeId
+      ? CHARTYPE_NAMES_CN[charTypeId] ?? ""
+      : "";
+    const charTypeSearchable = [charTypeId, charTypeCN]
+      .filter(Boolean)
+      .join("/");
     const dept = e.department ?? "";
 
     const fields: Array<[string, string]> = [
@@ -310,7 +319,7 @@ export function searchCharacters(
       ["英文名", engName],
       ["ID", id],
       ["职业", profession],
-      ["属性", charType],
+      ["属性", charTypeSearchable],
       ["阵营", dept],
     ];
 

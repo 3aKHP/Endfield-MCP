@@ -27,6 +27,7 @@ import {
 } from "./data/datasets.js";
 import { clearCharacterCaches } from "./data/characters.js";
 import { clearTextCaches } from "./data/texts.js";
+import { createLogger } from "./utils/log.js";
 import {
   type SyncResult,
   syncReleaseArchive,
@@ -36,10 +37,7 @@ import {
 // Logging
 // ---------------------------------------------------------------------------
 
-function log(level: "INFO" | "WARN" | "ERROR", msg: string): void {
-  const ts = new Date().toISOString();
-  process.stderr.write(`${ts} ${level} ef.sync: ${msg}\n`);
-}
+const log = createLogger("ef.sync");
 
 // ---------------------------------------------------------------------------
 // Single-flight + retry scaffolding

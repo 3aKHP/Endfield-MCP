@@ -34,6 +34,7 @@ import {
   sep,
 } from "node:path";
 import AdmZip from "adm-zip";
+import { parseMirrors } from "../config.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -93,24 +94,17 @@ function githubHeaders(): Record<string, string> {
 }
 
 /**
- * Parse GITHUB_MIRRORS env var into a list of proxy base URLs (trailing slash stripped).
- *
- * Unset / empty → [] (direct only, no cascade).
- * "https://ghproxy.net" → ["https://ghproxy.net"].
- * "https://a.example,https://b.example" → ["https://a.example", "https://b.example"].
- *
+ * Return mirror URLs parsed from GITHUB_MIRRORS env var.
+ * Delegates to config.ts:parseMirrors to keep parsing in one place.
  * Mirror URL format (ghproxy-style): `<mirror>/<original_url>`.
  */
-function parseMirrors(): string[] {
-  return (process.env["GITHUB_MIRRORS"] ?? "")
-    .split(",")
-    .map((s) => s.trim().replace(/\/+$/, ""))
-    .filter(Boolean);
+function mirrorUrls(): string[] {
+  return parseMirrors(process.env["GITHUB_MIRRORS"] ?? "");
 }
 
 /** Return `[url, mirroredUrl1, mirroredUrl2, ...]`. */
 function urlCandidates(url: string): string[] {
-  return [url, ...parseMirrors().map((m) => `${m}/${url}`)];
+  return [url, ...mirrorUrls().map((m) => `${m}/${url}`)];
 }
 
 /**
@@ -343,7 +337,7 @@ export async function syncRelease(spec: ReleaseSpec): Promise<SyncResult> {
     // No zip and API unreachable — attempt blind download via the
     // releases/latest/download/ shortcut (no GitHub API call; ghproxy and
     // similar mirrors support this URL pattern).
-    if (parseMirrors().length > 0) {
+    if (mirrorUrls().length > 0) {
       const blindUrl = `https://github.com/${spec.owner}/${spec.repo}/releases/latest/download/${spec.assetName}`;
       try {
         await downloadReleaseAsset(spec, "unknown", blindUrl);

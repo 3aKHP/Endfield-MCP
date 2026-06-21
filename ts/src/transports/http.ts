@@ -21,16 +21,14 @@
 
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createLogger } from "../utils/log.js";
 
 export interface HttpOptions {
   port: number;
   host: string;
 }
 
-function log(level: "INFO" | "WARN" | "ERROR", msg: string): void {
-  const ts = new Date().toISOString();
-  process.stderr.write(`${ts} ${level} ef.http: ${msg}\n`);
-}
+const log = createLogger("ef.http");
 
 /**
  * Build a fresh transport+server pair for one request.

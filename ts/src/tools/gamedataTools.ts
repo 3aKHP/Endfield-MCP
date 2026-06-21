@@ -18,6 +18,30 @@ import {
 } from "../data/characters.js";
 import { SUPPORTED_LANGUAGES } from "../data/datasets.js";
 
+/**
+ * Wrap a tool handler so any thrown error (missing data file, unbound
+ * store, parse failure) is caught and returned as a Chinese text message
+ * instead of propagating to the MCP framework as a protocol error.
+ *
+ * Per STYLE.md: "缺失数据 / 网络失败时返回人类可读的中文错误消息作为
+ * 工具的 text content，不要抛裸异常给 MCP 框架。"
+ */
+function withGracefulError<T extends Record<string, unknown>>(
+  run: (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }>,
+): (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }> {
+  return async (args) => {
+    try {
+      return await run(args);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const hint = msg.includes("not found") || msg.includes("Dataset file")
+        ? "数据文件缺失——GameData 可能尚未同步。请稍候（后台 sync 进行中）或检查网络连接。"
+        : `处理请求时出错：${msg}`;
+      return { content: [{ type: "text", text: hint }] };
+    }
+  };
+}
+
 export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_list_characters",
@@ -32,7 +56,7 @@ export function registerGamedataTools(server: McpServer): void {
         .default("CN")
         .describe("返回内容使用的语言，默认 CN（简体中文）。"),
     },
-    async ({ lang }) => {
+    withGracefulError(async ({ lang }) => {
       const list = listCharacters(lang as Parameters<typeof listCharacters>[0]);
       if (list.length === 0) {
         return {
@@ -47,7 +71,7 @@ export function registerGamedataTools(server: McpServer): void {
         )
         .join("\n");
       return { content: [{ type: "text", text: header + body }] };
-    },
+    }),
   );
 
   server.tool(
@@ -68,7 +92,7 @@ export function registerGamedataTools(server: McpServer): void {
         .default("CN")
         .describe("名称字段使用的语言，默认 CN。声优字段始终返回全部四种语言。"),
     },
-    async ({ id_or_name, lang }) => {
+    withGracefulError(async ({ id_or_name, lang }) => {
       const info = getCharacterInfo(
         id_or_name,
         lang as Parameters<typeof getCharacterInfo>[1],
@@ -103,7 +127,7 @@ export function registerGamedataTools(server: McpServer): void {
         if (cv.korean) lines.push(`  - 韩文: ${cv.korean}`);
       }
       return { content: [{ type: "text", text: lines.join("\n") }] };
-    },
+    }),
   );
 
   server.tool(
@@ -131,7 +155,7 @@ export function registerGamedataTools(server: McpServer): void {
         .default("CN")
         .describe("名称字段使用的语言，默认 CN。"),
     },
-    async ({ pattern, max_results, lang }) => {
+    withGracefulError(async ({ pattern, max_results, lang }) => {
       const results = searchCharacters(
         pattern,
         max_results,
@@ -147,6 +171,6 @@ export function registerGamedataTools(server: McpServer): void {
         .map((r) => `**${r.id}** ${r.name}\n${r.snippet}`)
         .join("\n\n---\n\n");
       return { content: [{ type: "text", text: header + body }] };
-    },
+    }),
   );
 }
