@@ -71,13 +71,16 @@ jobs:
         working-directory: ts
         run: bun run build && npm pack
 
-      - name: Debug auth env
-        run: |
-          echo "event_name=${{ github.event_name }}"
-          echo "NPM_TOKEN length: ${#NODE_AUTH_TOKEN}"
-          echo "NPM_TOKEN set: $([ -n "$NODE_AUTH_TOKEN" ] && echo yes || echo no)"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # setup-node with registry-url generates ~/.npmrc with the auth
+      # token. Without this, npm publish cannot read NODE_AUTH_TOKEN —
+      # npm only consumes the token from .npmrc, not from the env var
+      # directly. (Bun's setup does not write .npmrc.) Matches the
+      # PRTS-MCP cd-ts.yml pattern (lines 101-105).
+      - name: Setup Node.js for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
