@@ -21,23 +21,7 @@ import {
   readStory as _readStory,
   searchStories as _searchStories,
 } from "../data/story.js";
-
-/** Wrap a handler so errors surface as Chinese text, not MCP protocol errors. */
-function withGracefulError<T extends Record<string, unknown>>(
-  run: (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }>,
-): (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }> {
-  return async (args) => {
-    try {
-      return await run(args);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      const hint = msg.includes("not found") || msg.includes("Dataset file")
-        ? "剧情数据缺失——story bundle 可能尚未同步。请稍候（后台 sync 进行中）或检查网络连接。"
-        : `处理请求时出错：${msg}`;
-      return { content: [{ type: "text", text: hint }] };
-    }
-  };
-}
+import { withGracefulError } from "./toolRuntime.js";
 
 function storyNotAvailable(): {
   content: Array<{ type: "text"; text: string }>;
@@ -61,7 +45,7 @@ export function registerStoryTools(server: McpServer): void {
       "这是探索剧情的第一步——获取章节 ID 后传入 ef_list_stories 查看该章节下的所有对话场景。",
     ].join(" "),
     {},
-    withGracefulError(async () => {
+    withGracefulError("story bundle", async () => {
       if (!hasStoryData()) return storyNotAvailable();
       const chapters = _listStoryChapters();
       if (chapters.length === 0) {
@@ -92,7 +76,7 @@ export function registerStoryTools(server: McpServer): void {
           "章节 ID，如「e1」（主线第一章）、「sm1」（支线）、「c6」（6 号角色的故事）。从 ef_list_story_chapters 获取。",
         ),
     },
-    withGracefulError(async ({ chapter_id }) => {
+    withGracefulError("story bundle", async ({ chapter_id }) => {
       if (!hasStoryData()) return storyNotAvailable();
       const stories = _listStories(chapter_id);
       if (stories.length === 0) {
@@ -134,7 +118,7 @@ export function registerStoryTools(server: McpServer): void {
         .default(true)
         .describe("是否包含旁白和场景描述，默认 true。设为 false 只保留对话台词。"),
     },
-    withGracefulError(async ({ conv_key, include_narration }) => {
+    withGracefulError("story bundle", async ({ conv_key, include_narration }) => {
       if (!hasStoryData()) return storyNotAvailable();
       const scene = _readStory(conv_key);
       if (scene === null) {
@@ -188,7 +172,7 @@ export function registerStoryTools(server: McpServer): void {
         .default(30)
         .describe("返回结果数量上限，默认 30。"),
     },
-    withGracefulError(async ({ pattern, max_results }) => {
+    withGracefulError("story bundle", async ({ pattern, max_results }) => {
       if (!hasStoryData()) return storyNotAvailable();
       const results = _searchStories(pattern, max_results);
       if (results.length === 0) {

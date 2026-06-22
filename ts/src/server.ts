@@ -109,28 +109,30 @@ async function main(): Promise<void> {
   bindTextStore(dataStore);
   bindCharacterStore(dataStore);
 
-  // Story store: separate subdirectory (story/) under both synced and
-  // bundled roots. Sync writes here; reader reads catalog eagerly and
-  // conv/ files on-demand. Story bundled data is optional in v0.3
-  // (the bundle is 19MB — may not ship in every npm package variant).
+  // Story store: always construct FallbackStore unconditionally (matching
+  // the GameData pattern above). The synced/story directory may not exist
+  // at startup but gets populated by background sync — DirectoryStore
+  // returns false from exists() for missing dirs, so FallbackStore
+  // transparently falls through until sync writes files. Gating the
+  // binding on directory existence would permanently miss later-synced
+  // data (the exact trap the GameData path was rewritten to avoid).
   const storySynced = join(cfg.dataPath, "story");
   const storyBundled = join(cfg.bundledDataPath, "story");
   const storySyncedExists = existsSync(storySynced);
   const storyBundledExists = existsSync(storyBundled);
-  if (storySyncedExists || storyBundledExists) {
-    const storyStore: JsonStore = new FallbackStore(
-      new DirectoryStore(storySynced),
-      new DirectoryStore(storyBundled),
-    );
-    bindStoryStore(storyStore);
+  const storyStore: JsonStore = new FallbackStore(
+    new DirectoryStore(storySynced),
+    new DirectoryStore(storyBundled),
+  );
+  bindStoryStore(storyStore);
+  log(
+    "INFO",
+    `Story store: FallbackStore(synced=${storySynced}${storySyncedExists ? "" : " [absent]"}, bundled=${storyBundled}${storyBundledExists ? "" : " [absent]"})`,
+  );
+  if (!storySyncedExists && !storyBundledExists) {
     log(
       "INFO",
-      `Story store: FallbackStore(synced=${storySynced}${storySyncedExists ? "" : " [absent]"}, bundled=${storyBundled}${storyBundledExists ? "" : " [absent]"})`,
-    );
-  } else {
-    log(
-      "INFO",
-      `Story data not yet available (${storySynced} absent). Story tools will report "no data" until the v0.3.0 mirror sync completes.`,
+      `Story data not yet available — both layers absent. Story tools will report "no data" until the v0.3.0 mirror sync completes.`,
     );
   }
 

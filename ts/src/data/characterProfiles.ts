@@ -75,16 +75,16 @@ export interface VoiceLine {
 /**
  * Strip Endfield rich-text markup from profile/voice text.
  *
- * Tags observed in the data:
- *   <@profile.key>...</>    — key/highlight span (content kept, tags dropped)
- *   <@xxxx.yyyy>...</>      — other attribute spans (same handling)
- *   standalone </>          — dangling close (dropped)
+ * Two opening-tag families exist in the data (both closed by `</>`):
+ *   <@profile.key>...</>   — key/highlight span (98+ distinct tags)
+ *   <#ba.consume>...</>    — status/effect span (98 distinct tags, 870+ values)
  *
- * Everything else (plain prose, newlines, punctuation) is preserved.
+ * Both are display hints, not content. We strip them so the LLM gets
+ * clean prose. The close tag `</>` is shared across both families.
  */
 function cleanProfileText(text: string): string {
-  // Drop opening tags like <@profile.key> or <@anything.here>
-  let out = text.replace(/<@[a-zA-Z0-9_.]+>/g, "");
+  // Drop opening tags: <@...> and <#...> (the two Endfield tag families).
+  let out = text.replace(/<[#@][a-zA-Z0-9_.]+>/g, "");
   // Drop close tags </>
   out = out.replace(/<\/>/g, "");
   return out.trim();

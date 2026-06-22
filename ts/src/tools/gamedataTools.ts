@@ -26,27 +26,7 @@ import {
   searchCharacters,
 } from "../data/characters.js";
 import { SUPPORTED_LANGUAGES } from "../data/datasets.js";
-
-/**
- * Wrap a tool handler so any thrown error (missing data file, unbound
- * store, parse failure) is caught and returned as a Chinese text message
- * instead of propagating to the MCP framework as a protocol error.
- */
-function withGracefulError<T extends Record<string, unknown>>(
-  run: (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }>,
-): (args: T) => Promise<{ content: Array<{ type: "text"; text: string }> }> {
-  return async (args) => {
-    try {
-      return await run(args);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      const hint = msg.includes("not found") || msg.includes("Dataset file")
-        ? "数据文件缺失——GameData 可能尚未同步。请稍候（后台 sync 进行中）或检查网络连接。"
-        : `处理请求时出错：${msg}`;
-      return { content: [{ type: "text", text: hint }] };
-    }
-  };
-}
+import { withGracefulError } from "./toolRuntime.js";
 
 const langSchema = z
   .enum(SUPPORTED_LANGUAGES as unknown as [string, ...string[]])
@@ -68,7 +48,7 @@ export function registerGamedataTools(server: McpServer): void {
         .describe("角色 ID（如 chr_0002_endminm）或准确角色名（如「管理员」「Endministrator」）。"),
       lang: langSchema.describe("返回内容使用的语言，默认 CN（简体中文）。"),
     },
-    withGracefulError(async ({ id_or_name, lang }) => {
+    withGracefulError("GameData", async ({ id_or_name, lang }) => {
       const archives = getCharacterArchives(
         id_or_name,
         lang as Parameters<typeof getCharacterArchives>[1],
@@ -108,7 +88,7 @@ export function registerGamedataTools(server: McpServer): void {
         .describe("角色 ID（如 chr_0005_chen）或准确角色名（如「陈千语」「Chen Qianyu」）。"),
       lang: langSchema.describe("返回内容使用的语言，默认 CN。"),
     },
-    withGracefulError(async ({ id_or_name, lang }) => {
+    withGracefulError("GameData", async ({ id_or_name, lang }) => {
       const voices = getCharacterVoices(
         id_or_name,
         lang as Parameters<typeof getCharacterVoices>[1],
@@ -150,7 +130,7 @@ export function registerGamedataTools(server: McpServer): void {
         .describe("角色 ID（如 chr_0002_endminm）或准确角色名。"),
       lang: langSchema.describe("名称字段使用的语言，默认 CN。声优字段始终返回全部四种语言。"),
     },
-    withGracefulError(async ({ id_or_name, lang }) => {
+    withGracefulError("GameData", async ({ id_or_name, lang }) => {
       const info = getCharacterInfo(
         id_or_name,
         lang as Parameters<typeof getCharacterInfo>[1],
@@ -200,7 +180,7 @@ export function registerGamedataTools(server: McpServer): void {
     {
       lang: langSchema.describe("返回内容使用的语言，默认 CN（简体中文）。"),
     },
-    withGracefulError(async ({ lang }) => {
+    withGracefulError("GameData", async ({ lang }) => {
       const list = listCharacters(lang as Parameters<typeof listCharacters>[0]);
       if (list.length === 0) {
         return {
@@ -240,7 +220,7 @@ export function registerGamedataTools(server: McpServer): void {
         .describe("返回结果数量上限，默认 30。"),
       lang: langSchema.describe("名称字段使用的语言，默认 CN。"),
     },
-    withGracefulError(async ({ pattern, max_results, lang }) => {
+    withGracefulError("GameData", async ({ pattern, max_results, lang }) => {
       const results = searchCharacters(
         pattern,
         max_results,

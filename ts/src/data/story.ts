@@ -110,6 +110,7 @@ let _entries: StoryEntry[] | null = null;
 let _missionNames: Record<string, string> | null = null;
 let _searchIndex: RawSearchEntry[] | null = null;
 let _chapterCache: Map<string, StoryEntry[]> | null = null;
+let _entryMap: Map<string, StoryEntry> | null = null;
 
 export function bindStoryStore(store: JsonStore): void {
   _store = store;
@@ -121,6 +122,7 @@ export function clearStoryCaches(): void {
   _missionNames = null;
   _searchIndex = null;
   _chapterCache = null;
+  _entryMap = null;
 }
 
 function store(): JsonStore {
@@ -276,7 +278,11 @@ export function readStory(convKey: string): StoryScene | null {
   const path = `conv/${convKey}.json`;
   if (!store().exists(path)) return null;
 
-  const raw = store().readJson<RawConv>(path);
+  // readJsonInt64Safe: conv line `id` fields are int64-sized in source
+  // data. We don't currently surface line ids, but use the safe parser
+  // defensively (matching characters.ts and texts.ts) so a future
+  // enhancement that adds line ids doesn't silently truncate them.
+  const raw = store().readJsonInt64Safe<RawConv>(path);
   const names = missionNames();
   const mission = raw.mission ?? "";
   const sceneNum = typeof raw.scene === "string"
@@ -364,10 +370,14 @@ export function searchStories(
   }
 
   const idx = searchIndex();
-  const allEntries = entries();
-  // Build a key→entry lookup for enriching results.
-  const entryMap = new Map<string, StoryEntry>();
-  for (const e of allEntries) entryMap.set(e.key, e);
+  // Build key→entry lookup lazily and cache it (9271 entries — pointless
+  // to rebuild on every search call since the catalog only changes on
+  // sync, which clears this cache via clearStoryCaches).
+  if (_entryMap === null) {
+    _entryMap = new Map<string, StoryEntry>();
+    for (const e of entries()) _entryMap.set(e.key, e);
+  }
+  const entryMap = _entryMap;
 
   const out: Array<{ key: string; snippet: string; entry: StoryEntry }> = [];
   for (const se of idx) {

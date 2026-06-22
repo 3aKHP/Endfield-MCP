@@ -4,7 +4,38 @@ All notable changes to EndField-MCP (TypeScript implementation) are recorded
 here. Format follows [Keep a Changelog](https://keepachangelog.com/),
 versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] — v0.2.0 GameData domain
+## [Unreleased] — v0.3.0 Creation-oriented tools
+
+### Added
+
+- **Character archives**: `ef_get_character_archives` — returns a character's background-story text (3 sections: basic profile / personnel summary / archive material). Data source: CharacterTable.profileRecord. Rich-text tags (`<@...>`, `<#...>`, `</>`) stripped by cleanProfileText.
+- **Character voices**: `ef_get_character_voices` — returns voice line text with trigger conditions (55-79 lines per character). Data source: CharacterTable.profileVoice.
+- **Story domain** (4 tools): `ef_list_story_chapters` (364 chapters), `ef_list_stories` (scenes within a chapter), `ef_read_story` (full dialogue scene), `ef_search_stories` (full-text search across 9271 scenes). Data source: `endfield-story-CN.zip` (v0.3.0 Release on EndFieldGameData, 19MB).
+- **Story data reader** (`data/story.ts`): catalog (index.json) loads eagerly; conv/ files load on-demand per scene read. Chapter derivation via mission-id prefix grouping. Search via pre-built search.json index.
+- **Character profile reader** (`data/characterProfiles.ts`): archives + voices projection with rich-text cleaning.
+- **Story types** (`data/storyTypes.ts`): StoryLine (dialog/narration/choice), StoryEntry, StoryChapter, StoryScene.
+- **Mirror**: `endfield-story-CN.zip` published as v0.3.0 Release on 3aKHP/EndFieldGameData (9275 files, 19MB).
+- **Build script**: `build-story-zip.ts` for packing story bundle with forward-slash entry names.
+- **Smoke test**: `smoke-creation.ts` for live verification of archives/voices/story tools.
+
+### Changed
+
+- **Character tool surface refactored** to PRTS-MCP three-way split: deleted `ef_get_character_info` (numeric-biased), added `ef_get_character_archives` (story text), `ef_get_character_voices` (voice lines), `ef_get_character_basic_info` (numeric info, renamed from the deleted tool's projection). Matches PRTS-MCP's get_operator_archives / get_operator_voicelines / get_operator_basic_info design.
+- `characters.ts`: extracted `resolveCharacterEntry()` from `getCharacterInfo()` so characterProfiles.ts reuses the same id/CN-name/EN-name lookup.
+- `startupSync.ts`: added STORY_CN dataset sync (own runner, own retry, clearStoryCaches on update).
+- `server.ts`: story store always constructed unconditionally via FallbackStore (matching GameData pattern — never gate binding on directory existence, or background sync data is permanently missed).
+- `datasets.ts`: added STORY_CN ReleaseDatasetSpec.
+- `withGracefulError` extracted to shared `tools/toolRuntime.ts` (was duplicated in gamedataTools + storyTools).
+- Version bumped to 0.3.0-dev.0.
+
+### Fixed
+
+- `cleanProfileText` now strips `<#...>` tag family (870+ i18n values use these status/effect tags), not just `<@...>`. Addresses CR #2 S3.
+- Story conv files parsed with `readJsonInt64Safe` (defensive — conv line `id` fields are int64-sized). Addresses CR #2 S4.
+- `searchStories` caches the 9271-entry key→entry Map at module level instead of rebuilding on every call. Addresses CR #2 S6.
+- Story store bound unconditionally at startup (was gated on directory existence — a regression that would permanently miss background-synced data). Addresses CR #2 B1.
+
+## [0.2.0-unreleased] — v0.2.0 GameData domain
 
 ### Added
 
