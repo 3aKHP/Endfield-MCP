@@ -82,7 +82,7 @@ export interface VoiceLine {
  * Both are display hints, not content. We strip them so the LLM gets
  * clean prose. The close tag `</>` is shared across both families.
  */
-function cleanProfileText(text: string): string {
+export function cleanProfileText(text: string): string {
   // Drop opening tags: <@...> and <#...> (the two Endfield tag families).
   let out = text.replace(/<[#@][a-zA-Z0-9_.]+>/g, "");
   // Drop close tags </>

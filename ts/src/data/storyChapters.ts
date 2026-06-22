@@ -47,7 +47,7 @@ export function clearChapterCache(): void {
  * Strategy: take the leading non-digit run + the following digit run.
  * "e1m1" → "e1", "sm1l1m1" → "sm1", "gm01m1" → "gm01".
  */
-function chapterPrefix(mission: string): string {
+export function chapterPrefix(mission: string): string {
   const match = mission.match(/^([a-z]+)(\d+)/i);
   return match ? `${match[1]}${match[2]}` : mission;
 }

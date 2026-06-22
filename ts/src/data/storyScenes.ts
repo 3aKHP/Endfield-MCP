@@ -54,8 +54,13 @@ interface RawConv {
 // Line normalization
 // ---------------------------------------------------------------------------
 
-/** Normalize a raw conv line to the StoryLine three-state shape. */
-function normalizeLine(line: RawConvLine): StoryLine {
+/**
+ * Normalize a raw conv line to the StoryLine three-state shape.
+ *
+ * Exported for direct unit testing of the three-state classification
+ * (speaker→dialog / actor→dialog / text-only→narration / empty→narration).
+ */
+export function normalizeLine(line: RawConvLine): StoryLine {
   // SNS/chat variant: has `speaker` or `cid` instead of `actor`.
   if (line.speaker && line.text) {
     return {
