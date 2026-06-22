@@ -72,7 +72,7 @@ jobs:
         run: bun run build && npm pack
 
       - name: Publish to npm
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ts
         run: |
           npm publish --access public
