@@ -71,6 +71,14 @@ jobs:
         working-directory: ts
         run: bun run build && npm pack
 
+      - name: Debug auth env
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "NPM_TOKEN length: ${#NODE_AUTH_TOKEN}"
+          echo "NPM_TOKEN set: $([ -n "$NODE_AUTH_TOKEN" ] && echo yes || echo no)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish to npm
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ts
