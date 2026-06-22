@@ -1,162 +1,44 @@
 /**
- * Character data reader — Endfield CharacterTable.json access layer.
+ * Character domain — operations facade (list / get / search projections).
  *
- * Reads the raw `{characterId: CharacterEntry}` table and projects it into
- * tool-friendly shapes. Name / CV fields come through the i18n resolver
- * (`./texts.ts`) so callers get actual strings, not int64 hashes.
+ * Thin layer over `./characterTable.js` (table cache + resolver) and
+ * `./characterEnums.js` (profession/charType/weaponType display names).
+ * Produces tool-friendly shapes (`CharacterListItem`, `CharacterInfo`)
+ * with names resolved through `./texts.ts` so callers get actual strings,
+ * not int64 hashes.
  *
- * ## Table shape
- *
- * CharacterTable.json: `{ [characterId: string]: CharacterEntry }`.
- * The characterId format is `chr_NNNN_slug` (e.g. `chr_0002_endminm`).
- * There are ~29 entries (as of the first export, 2026-06).
- *
- * ## Key fields (verified against chr_0002_endminm)
- *
- *   charId        string    "chr_0002_endminm"
- *   name          {id,text} → CN: "管理员", EN: "Endministrator"
- *   engName       string    "Endministrator" (pre-filled, non-localized)
- *   profession    number    0..8, see PROFESSION_NAMES
- *   rarity        number    4 | 5 | 6
- *   department    string    "ENDFIELD INDUSTRIES"
- *   charTypeId    string    "Physical" | "Cryst" | "Fire" | "Natural" | "Pulse"
- *   weaponType    number    1 | 2 | 3 | 5 | 6
- *   mainAttrType  number    attribute enum
- *   subAttrType   number    attribute enum
- *   cvName        object    {ChiCVName, EngCVName, JapCVName, KorCVName, charId}
- *                           each CV is {id,text}; resolved via texts.ts
+ * Lifecycle + resolver symbols (`bindCharacterStore`, `clearCharacterCaches`,
+ * `resolveCharacterEntry`, `CharacterEntry`) are re-exported from
+ * `./characterTable.js` so existing consumers (server, startupSync,
+ * characterProfiles, tests, smoke scripts) keep importing from
+ * `./characters.js` unchanged.
  */
 
 import { resolveText, type LanguageCode } from "./texts.js";
-import type { JsonStore } from "./stores.js";
+import {
+  sortedEntries,
+  resolveCharacterEntry,
+  type CharacterEntry,
+} from "./characterTable.js";
+import {
+  PROFESSION_NAMES_CN,
+  CHARTYPE_NAMES_CN,
+  WEAPON_TYPE_NAMES_CN,
+} from "./characterEnums.js";
 
 // ---------------------------------------------------------------------------
-// Types
+// Re-exports — preserve the public surface from before the split
 // ---------------------------------------------------------------------------
 
-/** A single CV entry inside CharacterEntry.cvName. */
-interface CvField {
-  id: string;
-  text: string;
-}
-
-/** The cvName sub-object shape. */
-interface CvNameObject {
-  ChiCVName?: CvField;
-  EngCVName?: CvField;
-  JapCVName?: CvField;
-  KorCVName?: CvField;
-  charId?: string;
-}
-
-/** The `{id, text}` localization shape used by name/desc fields. */
-interface LocalizedField {
-  id: string;
-  text: string;
-}
-
-/** Raw CharacterTable.json entry. Only fields we read are typed. */
-interface CharacterEntry {
-  charId: string;
-  name: LocalizedField;
-  engName?: string;
-  phoneticName?: string;
-  profession: number;
-  rarity: number;
-  department?: string;
-  charTypeId?: string;
-  weaponType?: number;
-  mainAttrType?: number;
-  subAttrType?: number;
-  sortOrder?: number;
-  defaultWeaponId?: string;
-  superArmor?: number;
-  cvName?: CvNameObject;
-  profileRecord?: unknown[];
-  profileVoice?: unknown[];
-  attributes?: unknown[];
-}
+export {
+  bindCharacterStore,
+  clearCharacterCaches,
+  resolveCharacterEntry,
+} from "./characterTable.js";
+export type { CharacterEntry } from "./characterTable.js";
 
 // ---------------------------------------------------------------------------
-// Enum mappings
-// ---------------------------------------------------------------------------
-
-/**
- * Profession enum → canonical Chinese name.
- * Verified against CharProfessionTable.json + I18nTextTable_CN.json.
- * 0=近卫, 2=重装, 4=辅助, 5=术师, 7=先锋, 8=突击.
- * Missing values (1,3,6) don't appear in current character data.
- */
-const PROFESSION_NAMES_CN: Record<number, string> = {
-  0: "近卫",
-  2: "重装",
-  4: "辅助",
-  5: "术师",
-  7: "先锋",
-  8: "突击",
-};
-
-/** CharType enum → canonical Chinese name. */
-const CHARTYPE_NAMES_CN: Record<string, string> = {
-  Physical: "物理",
-  Cryst: "结晶",
-  Fire: "火",
-  Natural: "自然",
-  Pulse: "脉动",
-};
-
-/** WeaponType enum → canonical Chinese name. */
-const WEAPON_TYPE_NAMES_CN: Record<number, string> = {
-  1: "剑",
-  2: "刀",
-  3: "枪",
-  5: "弓",
-  6: "法器",
-};
-
-// ---------------------------------------------------------------------------
-// Lazy cache + clear hook
-// ---------------------------------------------------------------------------
-
-let _characterTable: Record<string, CharacterEntry> | null = null;
-
-export function clearCharacterCaches(): void {
-  _characterTable = null;
-}
-
-// ---------------------------------------------------------------------------
-// Store binding
-// ---------------------------------------------------------------------------
-
-let _store: JsonStore | null = null;
-
-export function bindCharacterStore(store: JsonStore): void {
-  _store = store;
-  clearCharacterCaches();
-}
-
-function store(): JsonStore {
-  if (_store === null) {
-    throw new Error(
-      "Character reader used before bindCharacterStore() — call it once at startup.",
-    );
-  }
-  return _store;
-}
-
-function table(): Record<string, CharacterEntry> {
-  if (_characterTable !== null) return _characterTable;
-  // Int64-safe parse: CharacterTable.name.id and cvName.*.id are int64
-  // localization hashes that exceed Number.MAX_SAFE_INTEGER. Plain
-  // readJson would truncate them and break i18n lookups.
-  _characterTable = store().readJsonInt64Safe<Record<string, CharacterEntry>>(
-    "tables/CharacterTable.json",
-  );
-  return _characterTable;
-}
-
-// ---------------------------------------------------------------------------
-// Public projections
+// Output shapes
 // ---------------------------------------------------------------------------
 
 /** Compact summary for list views. */
@@ -193,12 +75,9 @@ export interface CharacterInfo {
   defaultWeaponId: string;
 }
 
-/** Sort characters by sortOrder (ascending, stable). */
-function sortedEntries(): Array<[string, CharacterEntry]> {
-  return Object.entries(table()).sort(
-    (a, b) => (a[1].sortOrder ?? 9999) - (b[1].sortOrder ?? 9999),
-  );
-}
+// ---------------------------------------------------------------------------
+// Public projections
+// ---------------------------------------------------------------------------
 
 /** List all characters with default-language names resolved. */
 export function listCharacters(
@@ -215,43 +94,6 @@ export function listCharacters(
       : "未知",
     department: e.department ?? "未知",
   }));
-}
-
-/**
- * Resolve a character by id, CN name, requested-lang name, or engName.
- * Returns `{id, entry}` on hit, `null` on miss. Shared by getCharacterInfo
- * and the characterProfiles module so both use the same lookup precedence.
- */
-export function resolveCharacterEntry(
-  idOrName: string,
-  lang: LanguageCode = "CN",
-): { id: string; entry: CharacterEntry } | null {
-  const t = table();
-  // Try exact id first.
-  let entry: CharacterEntry | undefined = t[idOrName];
-  let resolvedId = idOrName;
-
-  // Fall back to matching on resolved name (CN/EN) or engName.
-  if (entry === undefined) {
-    for (const [cid, e] of Object.entries(t)) {
-      const cnName = resolveText(e.name, "CN", "");
-      const targetName = resolveText(e.name, lang, "");
-      const engName = e.engName ?? "";
-      if (
-        cid === idOrName ||
-        cnName === idOrName ||
-        targetName === idOrName ||
-        engName === idOrName
-      ) {
-        entry = e;
-        resolvedId = cid;
-        break;
-      }
-    }
-  }
-
-  if (entry === undefined) return null;
-  return { id: resolvedId, entry };
 }
 
 export function getCharacterInfo(
