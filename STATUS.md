@@ -146,4 +146,4 @@ Endfield-MCP/
 
 - [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
 - [x] `{id, text}` 本地化类型重复 — dev 已统一（refactor 分支）：删除 `characterProfiles.ts` 的 `RecordField` + `characterTable.ts` 的 `LocalizedField` 与 `CvField` 三个文件私有重复定义，全部改用 `texts.ts` 导出的 `LocalizedText`；消除 `characterProfiles.ts` 的 4 处 `as` 强转；纯类型层改动，运行时行为不变
-- [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）
+- [x] ~~`characterEnums.ts` 的三个枚举映射是硬编码~~ — **已评估，决定不做（wontfix）**：profession/charType 源表在镜像可动态读，但 (1) 枚举值是已对齐真实数据验证的常量，游戏更新极少变动基础设计（职业/属性/武器类型）；(2) 动态化的唯一实质收益是多语言职业/属性名，当前工具始终输出中文，YAGNI；(3) weaponType 无源表（镜像只有 EquipTable），强行动态化会留下混合形态破坏单一职责；(4) 动态化要让纯数据模块引入 store 依赖，违反它被刻意拆分出来的分层初衷。综合成本不抵收益，硬编码作为合理终局。若未来角色工具需要 `lang` 参数返回本地化职业名，再重新评估。
