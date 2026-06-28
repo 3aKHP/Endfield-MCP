@@ -69,7 +69,7 @@ No changes yet.
 - **int64-safe JSON parsing** (`stores.ts:readJsonInt64Safe`): Endfield's localization ids exceed `Number.MAX_SAFE_INTEGER`; plain `JSON.parse` silently truncates them. String-aware preprocessor wraps large integer literals in quotes before parsing.
 - **Character reader** (`data/characters.ts`): list/get/search projections with profession/rarity/charType/weaponType enum mapping and CV resolution.
 - **Sync orchestration** (`startupSync.ts`): single-flight locking, exponential backoff retries (30s/120s/600s), cache-clear cascade on successful refresh.
-- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish. _(Note: provenance was dropped before the first real publish to debug auth and was only restored in a later release via Trusted Publishing — see [Unreleased].)_
+- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish.
 - **Build/deploy scripts**: `fetch-bundled-data.ts`, `build-mirror-zip.ts` (forward-slash-enforcing packer), three smoke tests (`smoke-live`/`smoke-gamedata`/`smoke-sync`/`smoke-bundled-fallback`).
 - **Tests**: +24 (8 int64-safe parsing, 16 character reader). Total 90/90.
 

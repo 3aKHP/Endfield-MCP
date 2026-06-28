@@ -37,7 +37,7 @@ import { runHttp } from "./transports/http.js";
 // ---------------------------------------------------------------------------
 
 const SERVER_NAME = "Endfield_Wiki_Assistant";
-const SERVER_VERSION = "0.3.0";
+const SERVER_VERSION = "0.3.1";
 
 const log = createLogger("ef.server");
 
