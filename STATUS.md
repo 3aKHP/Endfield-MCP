@@ -137,7 +137,7 @@ EndFiled-MCP/
 
 技术债（详见 ROADMAP Patch Line）：
 
-- [x] npm Trusted Publishing 迁移 — **dev 已修（PR #7，待 v0.3.1 发布）**
+- [x] npm Trusted Publishing 迁移 — dev 已配置（PR #7，cd.yml OIDC + Node 22），**待首次实发布验证**
 - [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — dev 已修（PR #5）
 - [x] Story bundled data 未进 npm 包 — dev 已修（PR #6）
 - [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 有设计草稿；PR #8 补齐消费侧契约，仓库 CI 实装待 self-hosted runner）

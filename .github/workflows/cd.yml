@@ -22,7 +22,11 @@ jobs:
   publish-npm:
     name: Publish npm package
     runs-on: ubuntu-latest
-    environment: npm  # gates deployment; npm publish uses OIDC (Trusted Publishing)
+    # `environment: npm` both gates deployment AND must match the environment
+    # name (if any) configured on the npm-side Trusted Publisher — a mismatch
+    # yields a 404 on publish. OIDC trust is keyed to repo + workflow file +
+    # environment; keep this name in sync with the npm Trusted Publisher form.
+    environment: npm
     steps:
       - uses: actions/checkout@v4
 
@@ -90,10 +94,15 @@ jobs:
       # registry. Under Trusted Publishing, npm authenticates via the OIDC
       # token issued by GitHub Actions (no long-lived NPM_TOKEN needed) —
       # setup-node still must run so the registry endpoint is configured.
+      #
+      # Node 22+ is REQUIRED, not optional: the OIDC token-exchange flow
+      # landed in npm 11.5.1, which only ships with Node ≥ 22.14.0. Node 20
+      # bundles npm 10.x, which has no OIDC support and will fail with
+      # ENEEDAUTH on publish. Do NOT downgrade to 20.
       - name: Setup Node.js for npm publish
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm

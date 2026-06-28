@@ -12,7 +12,7 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **npm Trusted Publishing**: CD now publishes with `--provenance` and authenticates via GitHub Actions OIDC instead of a long-lived `NPM_TOKEN` secret. The `NODE_AUTH_TOKEN` env binding is removed; npm trust is established through the Trusted Publisher configured on the npm package. `id-token: write` was already present (declared for provenance in v0.2.0 but unused until now).
+- **npm Trusted Publishing**: CD now publishes with `--provenance` and authenticates via GitHub Actions OIDC instead of a long-lived `NPM_TOKEN` secret. The `NODE_AUTH_TOKEN` env binding is removed; npm trust is established through the Trusted Publisher configured on the npm package. `setup-node` is bumped to Node 22 — Trusted Publishing's OIDC token-exchange flow requires npm ≥ 11.5.1, which only ships with Node ≥ 22.14.0 (Node 20's npm 10.x has no OIDC support and fails with ENEEDAUTH). `id-token: write` was already present (declared for provenance in v0.2.0 but unused until now).
 
 ### Fixed
 
