@@ -1,13 +1,13 @@
 # EndField-MCP Roadmap
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-29_
 
 EndField-MCP is pre-1.0. This document tracks **what comes next**. For
 shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release
 
-- TypeScript: `0.3.0` — first public release
+- TypeScript: `0.3.1` — tech-debt cleanup (story bundled fallback, npm Trusted Publishing, mirror contract, ReDoS hardening)
 - 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
 - 157 unit tests passing
 - Single implementation: TypeScript / Bun
@@ -136,8 +136,10 @@ Patches 只做 bug 修复、基建、不扩展能力面。
 
 | 版本 | 主题 | 内容 |
 |------|------|------|
-| **0.3.1** | 技术债清理 | (1) npm Trusted Publishing 迁移——npm 侧配 trusted publisher，cd.yml 加回 `--provenance`，去掉 NPM_TOKEN；(2) S7: `ef_search_characters` 加 `.max(200)` ReDoS 防护（对齐 story 工具）；(3) Story bundled data——19MB story bundle 进 npm 包，让离线场景有兜底；(4) Mirror CI workflow——EndFieldGameData 仓库的自动重导出 GitHub Actions |
+| **0.3.1** | 技术债清理 | (1) ⏳ npm Trusted Publishing 迁移（PR #7，dev 已配置，待首次实发布验证）——npm 侧配 trusted publisher，cd.yml 加回 `--provenance` + Node 22（OIDC 要求 npm ≥ 11.5.1），去掉 NPM_TOKEN；(2) ✅ S7: `ef_search_characters` 加 `.max(200)` ReDoS 防护（PR #5）；(3) ✅ Story bundled data（PR #6）——19MB story bundle 进 npm 包，离线兜底；(4) ⏳ Mirror CI workflow——本仓库消费侧契约补齐（PR #8），EndFieldGameData 仓库的自动重导出 GitHub Actions 待 self-hosted runner |
 | 0.3.2（保留） | 体验优化 | 工具描述关键词优化（提升客户端 RAG 召回）/ 分页标准化 `{total, offset, limit, items}` / 结构化错误 `{error_code, message}` |
+
+> **ReDoS 防护的现实边界**：S7 的 `.max(200)` 字符上限是对两个正则接受工具（`ef_search_characters` / `ef_search_stories`）的**输入复杂度边界**，缓解最常见的长模式注入。它**不消除** ReDoS——短病态模式（如 `^(a?){20}a{20}$` 仅 16 字符）仍可触发指数级回溯。若未来需要真正的 ReDoS 免疫，需在 data 层引入非回溯引擎或显式复杂度检查。当前方案是与现有 story 工具对齐的基线防护。
 
 ## 2.0 Boundary（not before 1.x matures）
 

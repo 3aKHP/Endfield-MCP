@@ -60,11 +60,12 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * GitHub coordinates of the self-hosted EndField data mirror.
+ * GitHub coordinates of the self-hosted Endfield data mirror.
  *
- * SCHEMA_TODO: replace with the real owner/repo once the mirror is created.
- * Until then these point at a placeholder so config validation fails loudly
- * rather than silently hitting the wrong upstream.
+ * The mirror is live (3aKHP/EndFieldGameData) with two published Releases:
+ * v0.2.0 (endfield-tables.zip) and v0.3.0 (endfield-story-CN.zip). These
+ * coordinates feed the sync layer's download URL construction; changing
+ * them here re-points all dataset fetches.
  */
 export const MIRROR_OWNER = "3aKHP";
 export const MIRROR_REPO = "EndFieldGameData";

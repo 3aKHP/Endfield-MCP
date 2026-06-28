@@ -1,12 +1,12 @@
 # EndField-MCP 项目状态
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-29_
 
 ## 当前版本
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.0 | 首个正式发版（Wiki + 角色档案/语音/数值 + 剧情文本），157 单测全绿 |
+| TypeScript（Bun） | 0.3.1 | 技术债清理版本（Story 离线兜底 + npm Trusted Publishing + Mirror 契约 + ReDoS 防护），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -14,7 +14,7 @@ _Last updated: 2026-06-22_
 
 ## 当前分支
 
-- `main` — v0.3.0（含 v0.1 骨架 + v0.2 GameData 基础设施 + v0.3 创作工具，tag `v0.3.0`）
+- `main` — v0.3.1（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理，tag `v0.3.1`）
 - `dev` — 与 main 同步，作为下一个版本的工作分支
 
 ## 数据源
@@ -137,13 +137,13 @@ EndFiled-MCP/
 
 技术债（详见 ROADMAP Patch Line）：
 
-- [ ] npm Trusted Publishing 迁移（当前用 NPM_TOKEN 首发模式，下个版本转 Trusted Publishing）
-- [ ] `ef_search_characters` 缺 `.max(200)` ReDoS 防护（story 工具已做，character 工具未对齐）
-- [ ] Story bundled data 未进 npm 包（tables 已 bundled，story 19MB 尚未）
-- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 有设计草稿）
+- [x] npm Trusted Publishing 迁移 — dev 已配置（PR #7，cd.yml OIDC + Node 22），**待首次实发布验证**
+- [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — dev 已修（PR #5）
+- [x] Story bundled data 未进 npm 包 — dev 已修（PR #6）
+- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 已从草稿收敛为消费侧契约；仓库 CI 实装待 self-hosted runner）
 
 代码债务：
 
-- [ ] `SCHEMA_TODO` 残留（datasets.ts + startupSync.ts，待 mirror schema 最终确认后清理）
+- [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
 - [ ] `characterProfiles.ts` 的 `LocalizedField` 与 `texts.ts` 的 `LocalizedText` 类型重复（语义等价，待统一）
 - [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）

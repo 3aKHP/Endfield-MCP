@@ -22,7 +22,11 @@ jobs:
   publish-npm:
     name: Publish npm package
     runs-on: ubuntu-latest
-    environment: npm  # NPM_TOKEN lives under this environment
+    # `environment: npm` both gates deployment AND must match the environment
+    # name (if any) configured on the npm-side Trusted Publisher — a mismatch
+    # yields a 404 on publish. OIDC trust is keyed to repo + workflow file +
+    # environment; keep this name in sync with the npm Trusted Publisher form.
+    environment: npm
     steps:
       - uses: actions/checkout@v4
 
@@ -60,35 +64,52 @@ jobs:
         working-directory: ts
         run: |
           if [ ! -f data/endfield/tables/CharacterTable.json ]; then
-            echo "ERROR: bundled data not populated"
+            echo "ERROR: bundled tables not populated"
+            exit 1
+          fi
+          if [ ! -f data/endfield/story/index.json ]; then
+            echo "ERROR: bundled story data not populated"
+            exit 1
+          fi
+          # Sanity: at least one conv scene extracted. Catches a malformed
+          # mirror zip that ships index.json but an empty conv/ — such a zip
+          # would pass requiredFiles validation (conv isn't in requiredFiles,
+          # see datasets.ts STORY_REQUIRED_FILES) yet make every readStory()
+          # return null at runtime.
+          if ! ls data/endfield/story/conv/*.json >/dev/null 2>&1; then
+            echo "ERROR: bundled story conv/ is empty"
             exit 1
           fi
           echo "bundled tables:"
           ls data/endfield/tables/
           ls data/endfield/i18n/
+          echo "bundled story:"
+          ls data/endfield/story/
 
       - name: Pack npm tarball
         working-directory: ts
         run: bun run build && npm pack
 
-      # setup-node with registry-url generates ~/.npmrc with the auth
-      # token. Without this, npm publish cannot read NODE_AUTH_TOKEN —
-      # npm only consumes the token from .npmrc, not from the env var
-      # directly. (Bun's setup does not write .npmrc.) Matches the
-      # PRTS-MCP cd-ts.yml pattern (lines 101-105).
+      # setup-node with registry-url writes ~/.npmrc pointing at the npm
+      # registry. Under Trusted Publishing, npm authenticates via the OIDC
+      # token issued by GitHub Actions (no long-lived NPM_TOKEN needed) —
+      # setup-node still must run so the registry endpoint is configured.
+      #
+      # Node 22+ is REQUIRED, not optional: the OIDC token-exchange flow
+      # landed in npm 11.5.1, which only ships with Node ≥ 22.14.0. Node 20
+      # bundles npm 10.x, which has no OIDC support and will fail with
+      # ENEEDAUTH on publish. Do NOT downgrade to 20.
       - name: Setup Node.js for npm publish
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ts
         run: |
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --provenance
 
       - name: Upload tarball artifact
         uses: actions/upload-artifact@v4

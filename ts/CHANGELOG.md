@@ -8,6 +8,21 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 No changes yet.
 
+## [0.3.1] — 2026-06-29 — Tech-debt cleanup
+
+### Added
+
+- **Story bundled fallback**: the build-time `fetch-bundled-data.ts` script now also downloads `endfield-story-CN.zip` (extracting into `data/endfield/story/`), so the npm package ships the story bundle as an offline fallback alongside the tables bundle. Previously only tables were bundled — story tools had no offline fallback despite the runtime store wiring (`FallbackStore` with a bundled layer) being in place since v0.3.0. The CD pipeline now verifies `data/endfield/story/index.json` is populated before packing.
+
+### Changed
+
+- **npm Trusted Publishing**: CD now publishes with `--provenance` and authenticates via GitHub Actions OIDC instead of a long-lived `NPM_TOKEN` secret. The `NODE_AUTH_TOKEN` env binding is removed; npm trust is established through the Trusted Publisher configured on the npm package. `setup-node` is bumped to Node 22 — Trusted Publishing's OIDC token-exchange flow requires npm ≥ 11.5.1, which only ships with Node ≥ 22.14.0 (Node 20's npm 10.x has no OIDC support and fails with ENEEDAUTH). `id-token: write` was already present (declared for provenance in v0.2.0 but unused until now).
+- **Mirror contract doc** (`docs/admin/mirror-release-workflow.md`): rewritten from a speculative design draft into a locked consumer-side contract — documents the published zip structures (tables + story), version-numbering policy, and the current manual-export reality, with the self-hosted-runner automation deferred. Three stale `SCHEMA_TODO` comments (`datasets.ts`, `startupSync.ts` ×2) plus one related stale placeholder (`config.ts`) replaced with declarative notes (the mirror is live, requiredFiles are pinned, readers landed in v0.2/v0.3).
+
+### Fixed
+
+- `ef_search_characters` now caps `pattern` at 200 characters (ReDoS hardening), aligning with `ef_search_stories`. Previously only the story tool enforced the limit.
+
 ## [0.3.0] — 2026-06-22 — Creation-oriented tools
 
 ### Added
@@ -54,7 +69,7 @@ No changes yet.
 - **int64-safe JSON parsing** (`stores.ts:readJsonInt64Safe`): Endfield's localization ids exceed `Number.MAX_SAFE_INTEGER`; plain `JSON.parse` silently truncates them. String-aware preprocessor wraps large integer literals in quotes before parsing.
 - **Character reader** (`data/characters.ts`): list/get/search projections with profession/rarity/charType/weaponType enum mapping and CV resolution.
 - **Sync orchestration** (`startupSync.ts`): single-flight locking, exponential backoff retries (30s/120s/600s), cache-clear cascade on successful refresh.
-- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish with provenance.
+- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish.
 - **Build/deploy scripts**: `fetch-bundled-data.ts`, `build-mirror-zip.ts` (forward-slash-enforcing packer), three smoke tests (`smoke-live`/`smoke-gamedata`/`smoke-sync`/`smoke-bundled-fallback`).
 - **Tests**: +24 (8 int64-safe parsing, 16 character reader). Total 90/90.
 
