@@ -1,13 +1,13 @@
 # EndField-MCP Roadmap
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-29_
 
 EndField-MCP is pre-1.0. This document tracks **what comes next**. For
 shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release
 
-- TypeScript: `0.3.0` — first public release
+- TypeScript: `0.3.1` — tech-debt cleanup (story bundled fallback, npm Trusted Publishing, mirror contract, ReDoS hardening)
 - 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
 - 157 unit tests passing
 - Single implementation: TypeScript / Bun

@@ -1,12 +1,12 @@
 # EndField-MCP 项目状态
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-29_
 
 ## 当前版本
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.0 | 首个正式发版（Wiki + 角色档案/语音/数值 + 剧情文本），157 单测全绿 |
+| TypeScript（Bun） | 0.3.1 | 技术债清理版本（Story 离线兜底 + npm Trusted Publishing + Mirror 契约 + ReDoS 防护），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -14,7 +14,7 @@ _Last updated: 2026-06-22_
 
 ## 当前分支
 
-- `main` — v0.3.0（含 v0.1 骨架 + v0.2 GameData 基础设施 + v0.3 创作工具，tag `v0.3.0`）
+- `main` — v0.3.1（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理，tag `v0.3.1`）
 - `dev` — 与 main 同步，作为下一个版本的工作分支
 
 ## 数据源
