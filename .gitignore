@@ -13,6 +13,7 @@ dist/
 ts/data/endfield/tables/
 ts/data/endfield/i18n/
 ts/data/endfield/archives/
+ts/data/endfield/story/
 
 # Runtime synced data (user data dir, never in repo)
 /data/endfield/

@@ -6,6 +6,10 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Story bundled fallback**: the build-time `fetch-bundled-data.ts` script now also downloads `endfield-story-CN.zip` (extracting into `data/endfield/story/`), so the npm package ships the story bundle as an offline fallback alongside the tables bundle. Previously only tables were bundled — story tools had no offline fallback despite the runtime store wiring (`FallbackStore` with a bundled layer) being in place since v0.3.0. The CD pipeline now verifies `data/endfield/story/index.json` is populated before packing.
+
 ### Fixed
 
 - `ef_search_characters` now caps `pattern` at 200 characters (ReDoS hardening), aligning with `ef_search_stories`. Previously only the story tool enforced the limit.
