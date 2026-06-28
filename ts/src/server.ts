@@ -18,6 +18,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import pkg from "../package.json" with { type: "json" };
 import { loadConfig } from "./config.js";
 import { createLogger } from "./utils/log.js";
 import { bindWikiConfig } from "./api/endfieldWiki.js";
@@ -37,7 +38,11 @@ import { runHttp } from "./transports/http.js";
 // ---------------------------------------------------------------------------
 
 const SERVER_NAME = "Endfield_Wiki_Assistant";
-const SERVER_VERSION = "0.3.1";
+// Single source of truth: read version from package.json rather than a
+// hand-maintained string literal. A literal drifts out of sync on release
+// (v0.3.2 shipped with the server reporting "0.3.1" because this constant
+// wasn't bumped alongside package.json — v0.3.3 fixes that).
+const SERVER_VERSION = pkg.version;
 
 const log = createLogger("ef.server");
 
