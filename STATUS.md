@@ -140,10 +140,10 @@ EndFiled-MCP/
 - [x] npm Trusted Publishing 迁移 — dev 已配置（PR #7，cd.yml OIDC + Node 22），**待首次实发布验证**
 - [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — dev 已修（PR #5）
 - [x] Story bundled data 未进 npm 包 — dev 已修（PR #6）
-- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 有设计草稿；PR #8 补齐消费侧契约，仓库 CI 实装待 self-hosted runner）
+- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 已从草稿收敛为消费侧契约；仓库 CI 实装待 self-hosted runner）
 
 代码债务：
 
-- [ ] `SCHEMA_TODO` 残留（datasets.ts + startupSync.ts，待 mirror schema 最终确认后清理）
+- [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
 - [ ] `characterProfiles.ts` 的 `LocalizedField` 与 `texts.ts` 的 `LocalizedText` 类型重复（语义等价，待统一）
 - [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）
