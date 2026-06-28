@@ -8,6 +8,20 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 No changes yet.
 
+## [0.3.3] — 2026-06-29 — Server-version sync fix
+
+### Fixed
+
+- **Server version no longer drifts from `package.json`.** `server.ts` had a
+  hand-maintained `SERVER_VERSION = "0.3.1"` string literal used for the
+  startup log line and the MCP `initialize` handshake's `serverInfo.version`.
+  It wasn't bumped alongside `package.json` during releases, so v0.3.2 shipped
+  with the server reporting "0.3.1" in its logs and protocol handshake despite
+  being the 0.3.2 package. Now read dynamically from `package.json` via a JSON
+  import (`import pkg from "../package.json"`), making `package.json` the
+  single source of truth. Surfaced when updating the production deployment to
+  0.3.2 and seeing the stale version in the startup journal.
+
 ## [0.3.2] — 2026-06-29 — Code-debt cleanup & tool-description polish
 
 ### Changed

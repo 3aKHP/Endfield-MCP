@@ -6,7 +6,7 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.2 | 代码债清理 + 工具描述优化版本（`LocalizedText` 类型统一 + 15 工具描述 RAG 召回优化；枚举动态化/分页/结构化错误已评估记录），157 单测全绿 |
+| TypeScript（Bun） | 0.3.3 | hotfix 版本（修复 `server.ts` 版本字面量与 `package.json` 脱钩——0.3.2 曾报 0.3.1；现动态读取），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -14,7 +14,7 @@ _Last updated: 2026-06-29_
 
 ## 当前分支
 
-- `main` — v0.3.2（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化，tag `v0.3.2`）
+- `main` — v0.3.3（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化 + v0.3.3 版本号 hotfix，tag `v0.3.3`）
 - `dev` — 0.4.0-dev.0，与 main 同步后向前推进，作为 v0.4 Worldbuilding 的工作分支
 
 ## 数据源
@@ -115,7 +115,7 @@ Endfield-MCP/
 └── README.md                    # 面向用户的说明
 ```
 
-## 验收状态（v0.3.2，最新发布）
+## 验收状态（v0.3.3，最新发布）
 
 | 检查项 | 结果 |
 |--------|------|
