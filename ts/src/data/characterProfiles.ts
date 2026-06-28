@@ -19,24 +19,28 @@
  */
 
 import { resolveCharacterEntry } from "./characters.js";
-import { resolveText, type LanguageCode, type LocalizedText } from "./texts.js";
+import {
+  resolveText,
+  type LanguageCode,
+  type LocalizedText,
+} from "./texts.js";
 
 // ---------------------------------------------------------------------------
 // Types (mirror the CharacterTable sub-objects we read)
+//
+// recordTitle/recordDesc/voiceTitle/voiceDesc are all {id, text} localization
+// refs — the same shape as texts.ts's LocalizedText. Reusing that type instead
+// of a local duplicate keeps one canonical name for the {id, text} contract and
+// removes the `as LocalizedText` casts at the resolveText() call sites.
 // ---------------------------------------------------------------------------
-
-interface RecordField {
-  id: string;
-  text: string;
-}
 
 interface ProfileRecord {
   charId?: string;
   id?: string;
   recordID?: string;
   recordIndex?: number;
-  recordTitle: RecordField;
-  recordDesc: RecordField;
+  recordTitle: LocalizedText;
+  recordDesc: LocalizedText;
   unlockType?: number;
   unlockValue?: number;
 }
@@ -46,8 +50,8 @@ interface ProfileVoice {
   id?: string;
   voId?: string;
   voiceIndex?: number;
-  voiceTitle: RecordField;
-  voiceDesc: RecordField;
+  voiceTitle: LocalizedText;
+  voiceDesc: LocalizedText;
   unlockType?: number;
   unlockValue?: number;
 }
@@ -116,9 +120,9 @@ export function getCharacterArchives(
 
   return records.map((r) => ({
     recordId: r.recordID ?? "",
-    title: resolveText(r.recordTitle as LocalizedText, lang, r.recordID ?? ""),
+    title: resolveText(r.recordTitle, lang, r.recordID ?? ""),
     text: cleanProfileText(
-      resolveText(r.recordDesc as LocalizedText, lang, ""),
+      resolveText(r.recordDesc, lang, ""),
     ),
   }));
 }
@@ -145,9 +149,9 @@ export function getCharacterVoices(
 
   return voices.map((v) => ({
     index: v.voiceIndex ?? 0,
-    title: resolveText(v.voiceTitle as LocalizedText, lang, v.voId ?? ""),
+    title: resolveText(v.voiceTitle, lang, v.voId ?? ""),
     text: cleanProfileText(
-      resolveText(v.voiceDesc as LocalizedText, lang, ""),
+      resolveText(v.voiceDesc, lang, ""),
     ),
   }));
 }

@@ -1,6 +1,6 @@
 {
   "name": "endfield-mcp",
-  "version": "0.3.1",
+  "version": "0.3.2-dev.0",
   "description": "MCP Server for Arknights: Endfield (TypeScript / stdio + Streamable HTTP)",
   "type": "module",
   "main": "dist/server.js",

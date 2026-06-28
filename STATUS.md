@@ -6,7 +6,7 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.1 | 技术债清理版本（Story 离线兜底 + npm Trusted Publishing + Mirror 契约 + ReDoS 防护），157 单测全绿 |
+| TypeScript（Bun） | 0.3.2-dev.0 | 开发中（v0.3.2 目标：体验优化 + 代码债清理；已合：`LocalizedText` 类型统一），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -145,5 +145,5 @@ Endfield-MCP/
 代码债务：
 
 - [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
-- [ ] `characterProfiles.ts` 的 `LocalizedField` 与 `texts.ts` 的 `LocalizedText` 类型重复（语义等价，待统一）
+- [x] `characterProfiles.ts` 的 `RecordField` 与 `texts.ts` 的 `LocalizedText` 类型重复 — dev 已统一（refactor 分支）：删除 `RecordField`，4 个字段改用 `LocalizedText`，消除 4 处 `as` 强转；纯类型层改动，运行时行为不变
 - [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）

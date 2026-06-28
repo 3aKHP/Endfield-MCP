@@ -6,7 +6,14 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-No changes yet.
+### Changed
+
+- **Unified `LocalizedText` type**: `characterProfiles.ts` no longer defines a
+  private `RecordField` interface that duplicated `texts.ts`'s `LocalizedText`
+  (`{id, text}`). The four `recordTitle` / `recordDesc` / `voiceTitle` /
+  `voiceDesc` fields now reuse the canonical `LocalizedText` type, removing the
+  four `as LocalizedText` casts at the `resolveText()` call sites. Pure
+  type-layer change; runtime behaviour and output are unchanged.
 
 ## [0.3.1] — 2026-06-29 — Tech-debt cleanup
 
