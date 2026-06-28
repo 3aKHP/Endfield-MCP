@@ -10,6 +10,10 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 - **Story bundled fallback**: the build-time `fetch-bundled-data.ts` script now also downloads `endfield-story-CN.zip` (extracting into `data/endfield/story/`), so the npm package ships the story bundle as an offline fallback alongside the tables bundle. Previously only tables were bundled — story tools had no offline fallback despite the runtime store wiring (`FallbackStore` with a bundled layer) being in place since v0.3.0. The CD pipeline now verifies `data/endfield/story/index.json` is populated before packing.
 
+### Changed
+
+- **npm Trusted Publishing**: CD now publishes with `--provenance` and authenticates via GitHub Actions OIDC instead of a long-lived `NPM_TOKEN` secret. The `NODE_AUTH_TOKEN` env binding is removed; npm trust is established through the Trusted Publisher configured on the npm package. `id-token: write` was already present (declared for provenance in v0.2.0 but unused until now).
+
 ### Fixed
 
 - `ef_search_characters` now caps `pattern` at 200 characters (ReDoS hardening), aligning with `ef_search_stories`. Previously only the story tool enforced the limit.
@@ -60,7 +64,7 @@ versioning follows [Semantic Versioning](https://semver.org/).
 - **int64-safe JSON parsing** (`stores.ts:readJsonInt64Safe`): Endfield's localization ids exceed `Number.MAX_SAFE_INTEGER`; plain `JSON.parse` silently truncates them. String-aware preprocessor wraps large integer literals in quotes before parsing.
 - **Character reader** (`data/characters.ts`): list/get/search projections with profession/rarity/charType/weaponType enum mapping and CV resolution.
 - **Sync orchestration** (`startupSync.ts`): single-flight locking, exponential backoff retries (30s/120s/600s), cache-clear cascade on successful refresh.
-- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish with provenance.
+- **CD pipeline** (`.github/workflows/cd.yml`): tag-triggered, fetches bundled data → npm publish. _(Note: provenance was dropped before the first real publish to debug auth and was only restored in a later release via Trusted Publishing — see [Unreleased].)_
 - **Build/deploy scripts**: `fetch-bundled-data.ts`, `build-mirror-zip.ts` (forward-slash-enforcing packer), three smoke tests (`smoke-live`/`smoke-gamedata`/`smoke-sync`/`smoke-bundled-fallback`).
 - **Tests**: +24 (8 int64-safe parsing, 16 character reader). Total 90/90.
 

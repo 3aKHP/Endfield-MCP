@@ -22,7 +22,7 @@ jobs:
   publish-npm:
     name: Publish npm package
     runs-on: ubuntu-latest
-    environment: npm  # NPM_TOKEN lives under this environment
+    environment: npm  # gates deployment; npm publish uses OIDC (Trusted Publishing)
     steps:
       - uses: actions/checkout@v4
 
@@ -86,11 +86,10 @@ jobs:
         working-directory: ts
         run: bun run build && npm pack
 
-      # setup-node with registry-url generates ~/.npmrc with the auth
-      # token. Without this, npm publish cannot read NODE_AUTH_TOKEN —
-      # npm only consumes the token from .npmrc, not from the env var
-      # directly. (Bun's setup does not write .npmrc.) Matches the
-      # PRTS-MCP cd-ts.yml pattern (lines 101-105).
+      # setup-node with registry-url writes ~/.npmrc pointing at the npm
+      # registry. Under Trusted Publishing, npm authenticates via the OIDC
+      # token issued by GitHub Actions (no long-lived NPM_TOKEN needed) —
+      # setup-node still must run so the registry endpoint is configured.
       - name: Setup Node.js for npm publish
         uses: actions/setup-node@v4
         with:
@@ -101,9 +100,7 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ts
         run: |
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --provenance
 
       - name: Upload tarball artifact
         uses: actions/upload-artifact@v4

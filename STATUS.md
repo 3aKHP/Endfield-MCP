@@ -137,10 +137,10 @@ EndFiled-MCP/
 
 技术债（详见 ROADMAP Patch Line）：
 
-- [ ] npm Trusted Publishing 迁移（当前用 NPM_TOKEN 首发模式，下个版本转 Trusted Publishing）
-- [ ] `ef_search_characters` 缺 `.max(200)` ReDoS 防护（story 工具已做，character 工具未对齐）
-- [ ] Story bundled data 未进 npm 包（tables 已 bundled，story 19MB 尚未）
-- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 有设计草稿）
+- [x] npm Trusted Publishing 迁移 — **dev 已修（PR #7，待 v0.3.1 发布）**
+- [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — dev 已修（PR #5）
+- [x] Story bundled data 未进 npm 包 — dev 已修（PR #6）
+- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 有设计草稿；PR #8 补齐消费侧契约，仓库 CI 实装待 self-hosted runner）
 
 代码债务：
 
