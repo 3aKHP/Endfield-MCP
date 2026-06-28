@@ -6,7 +6,7 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.2-dev.0 | 开发中（v0.3.2：代码债清理已合并 #13/#14；工具描述优化进行中；分页/结构化错误已评估推后），157 单测全绿 |
+| TypeScript（Bun） | 0.3.2 | 代码债清理 + 工具描述优化版本（`LocalizedText` 类型统一 + 15 工具描述 RAG 召回优化；枚举动态化/分页/结构化错误已评估记录），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -14,8 +14,8 @@ _Last updated: 2026-06-29_
 
 ## 当前分支
 
-- `main` — v0.3.1（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理，tag `v0.3.1`）
-- `dev` — 与 main 同步，作为下一个版本的工作分支
+- `main` — v0.3.2（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化，tag `v0.3.2`）
+- `dev` — 0.4.0-dev.0，与 main 同步后向前推进，作为 v0.4 Worldbuilding 的工作分支
 
 ## 数据源
 
@@ -115,7 +115,7 @@ Endfield-MCP/
 └── README.md                    # 面向用户的说明
 ```
 
-## 验收状态（v0.3.1，最新发布）
+## 验收状态（v0.3.2，最新发布）
 
 | 检查项 | 结果 |
 |--------|------|
@@ -137,13 +137,13 @@ Endfield-MCP/
 
 技术债（详见 ROADMAP Patch Line）：
 
-- [x] npm Trusted Publishing 迁移 — dev 已配置（PR #7，cd.yml OIDC + Node 22），**待首次实发布验证**
-- [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — dev 已修（PR #5）
-- [x] Story bundled data 未进 npm 包 — dev 已修（PR #6）
-- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 已从草稿收敛为消费侧契约；仓库 CI 实装待 self-hosted runner）
+- [x] npm Trusted Publishing 迁移 — 已配置（PR #7 + PR #12，Node 24 实发布验证通过，v0.3.1/v0.3.2 均成功发布到 npm）
+- [x] `ef_search_characters` 缺 `.max(200)` ReDoS 防护 — 已修（PR #5）
+- [x] Story bundled data 未进 npm 包 — 已修（PR #6）
+- [ ] Mirror CI workflow 未实装（`docs/admin/mirror-release-workflow.md` 已从草稿收敛为消费侧契约；EndFieldGameData 仓库的自动重导出 CI 属该仓库 scope，随其 self-hosted runner 单独推进）
 
 代码债务：
 
-- [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
-- [x] `{id, text}` 本地化类型重复 — dev 已统一（refactor 分支）：删除 `characterProfiles.ts` 的 `RecordField` + `characterTable.ts` 的 `LocalizedField` 与 `CvField` 三个文件私有重复定义，全部改用 `texts.ts` 导出的 `LocalizedText`；消除 `characterProfiles.ts` 的 4 处 `as` 强转；纯类型层改动，运行时行为不变
+- [x] `SCHEMA_TODO` 残留 — 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
+- [x] `{id, text}` 本地化类型重复 — 已统一（PR #13，v0.3.2）：删除 `characterProfiles.ts` 的 `RecordField` + `characterTable.ts` 的 `LocalizedField` 与 `CvField` 三个文件私有重复定义，全部改用 `texts.ts` 导出的 `LocalizedText`；消除 `characterProfiles.ts` 的 4 处 `as` 强转；纯类型层改动，运行时行为不变
 - [x] ~~`characterEnums.ts` 的三个枚举映射是硬编码~~ — **已评估，决定不做（wontfix）**：profession/charType 源表在镜像可动态读，但 (1) 枚举值是已对齐真实数据验证的常量，游戏更新极少变动基础设计（职业/属性/武器类型）；(2) 动态化的唯一实质收益是多语言职业/属性名，当前工具始终输出中文，YAGNI；(3) weaponType 无源表（镜像只有 EquipTable），强行动态化会留下混合形态破坏单一职责；(4) 动态化要让纯数据模块引入 store 依赖，违反它被刻意拆分出来的分层初衷。综合成本不抵收益，硬编码作为合理终局。若未来角色工具需要 `lang` 参数返回本地化职业名，再重新评估。

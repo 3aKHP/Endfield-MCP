@@ -6,6 +6,10 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.3.2] — 2026-06-29 — Code-debt cleanup & tool-description polish
+
 ### Changed
 
 - **Improved tool descriptions for better client-side tool selection (RAG
