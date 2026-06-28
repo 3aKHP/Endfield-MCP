@@ -7,7 +7,7 @@ shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release
 
-- TypeScript: `0.3.2` — code-debt cleanup & tool-description polish (LocalizedText unification, 15-tool description RAG-recall improvements; enum dynamization / pagination / structured errors evaluated and deferred/declined). Dev tracks `0.4.0-dev.0` toward the Worldbuilding minor.
+- TypeScript: `0.4.0-dev.0` — in development (v0.4 target: Worldbuilding — in-game PRTS documents & wiki entries). Latest release: `0.3.2` (code-debt cleanup & tool-description polish — LocalizedText unification, 15-tool description RAG-recall improvements, published to npm via Trusted Publishing).
 - 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
 - 157 unit tests passing
 - Single implementation: TypeScript / Bun
