@@ -144,6 +144,6 @@ EndFiled-MCP/
 
 代码债务：
 
-- [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts / config.ts 四处过时注释改为陈述性
+- [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
 - [ ] `characterProfiles.ts` 的 `LocalizedField` 与 `texts.ts` 的 `LocalizedText` 类型重复（语义等价，待统一）
 - [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）
