@@ -159,9 +159,10 @@ export function parseMirrors(raw: string): string[] {
 
 /**
  * Files that must be present for the GameData domain to be considered
- * "complete". The concrete list will be pinned in v0.2 once the self-hosted
- * mirror's schema is finalized; for now this is a placeholder so the
- * sync/config plumbing compiles end-to-end.
+ * "complete". Currently unused — sync orchestration relies on each
+ * dataset's own `requiredFiles` (see datasets.ts) rather than this
+ * global list. Retained as an extension point in case future cross-
+ * dataset completeness probes are needed; safe to leave empty.
  */
 export const REQUIRED_DATA_FILES: readonly string[] = [];
 

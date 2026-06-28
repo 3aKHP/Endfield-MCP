@@ -143,8 +143,8 @@ function logSyncResult(label: string, r: SyncResult): void {
  *
  * The returned function returns `true` when a retry is needed (network
  * failure), `false` otherwise. Cache clearing is invoked when sync writes
- * new data; reader modules expose their own `clearXxxCaches()` once
- * implemented (SCHEMA_TODO: wire those imports when readers land).
+ * new data — reader modules expose `clearXxxCaches()` which the runner
+ * calls after a successful refresh so stale projections don't linger.
  */
 function makeTablesSyncRunner(
   localZip: string,
@@ -216,7 +216,7 @@ export async function runStartupSync(): Promise<void> {
   if (GAMEDATA_TABLES.requiredFiles.length === 0) {
     log(
       "WARN",
-      "GameData tables dataset has no requiredFiles pinned (SCHEMA_TODO); skipping sync until the mirror schema is finalized.",
+      "GameData tables dataset has no requiredFiles pinned; skipping sync (defensive — requiredFiles are pinned in datasets.ts, this branch should not fire).",
     );
   } else {
     const localZip = join(cfg.dataPath, "archives", GAMEDATA_TABLES.assetName);
