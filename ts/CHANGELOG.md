@@ -16,6 +16,26 @@ versioning follows [Semantic Versioning](https://semver.org/).
   `LocalizedField` (used by `CharacterEntry.name`) and `CvField` (used by the
   four `cvName.*` CV fields). Pure type-layer change; runtime behaviour and
   output are unchanged. Resolves the type-duplication debt item in STATUS.md.
+  (#13)
+
+### Decisions
+
+- **Evaluated and declined `characterEnums.ts` enum dynamization (wontfix).**
+  The sibling debt item — making the three profession/charType/weaponType name
+  maps dynamic instead of hardcoded — was investigated and closed as
+  wontfix. Profession and charType have source tables in the mirror
+  (`CharProfessionTable` / `CharTypeTable`), but (1) the enum values are
+  verified constants that rarely change across game updates (profession /
+  attribute / weapon-type are base design, not tuning data); (2) the only real
+  benefit of dynamization would be multilingual profession/attribute names,
+  which the current tools don't need since they always output Chinese (YAGNI);
+  (3) `weaponType` has no source table (the mirror ships `EquipTable` only),
+  so dynamization would leave a mixed hardcoded/dynamic shape breaking the
+  module's single responsibility; (4) dynamizing would force a deliberately
+  pure-data module to take a store dependency, against the layering intent it
+  was split out for. The hardcoded maps are the reasonable terminal state.
+  Revisit if future character tools gain a `lang` option that needs localized
+  profession names.
 
 ## [0.3.1] — 2026-06-29 — Tech-debt cleanup
 
