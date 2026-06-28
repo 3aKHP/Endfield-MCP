@@ -8,12 +8,14 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **Unified `LocalizedText` type**: `characterProfiles.ts` no longer defines a
-  private `RecordField` interface that duplicated `texts.ts`'s `LocalizedText`
-  (`{id, text}`). The four `recordTitle` / `recordDesc` / `voiceTitle` /
-  `voiceDesc` fields now reuse the canonical `LocalizedText` type, removing the
-  four `as LocalizedText` casts at the `resolveText()` call sites. Pure
-  type-layer change; runtime behaviour and output are unchanged.
+- **Unified `{id, text}` localization type across the character domain**:
+  `texts.ts`'s exported `LocalizedText` is now the single canonical type for
+  every `{id, text}` localization ref. Removed three file-private duplicates:
+  `characterProfiles.ts`'s `RecordField` (and its four `as LocalizedText`
+  casts at the `resolveText()` call sites), plus `characterTable.ts`'s
+  `LocalizedField` (used by `CharacterEntry.name`) and `CvField` (used by the
+  four `cvName.*` CV fields). Pure type-layer change; runtime behaviour and
+  output are unchanged. Resolves the type-duplication debt item in STATUS.md.
 
 ## [0.3.1] — 2026-06-29 — Tech-debt cleanup
 

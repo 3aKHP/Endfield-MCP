@@ -18,38 +18,35 @@
  * callers get actual strings, not int64 hashes.
  */
 
-import { resolveText, type LanguageCode } from "./texts.js";
+import {
+  resolveText,
+  type LanguageCode,
+  type LocalizedText,
+} from "./texts.js";
 import type { JsonStore } from "./stores.js";
 
 // ---------------------------------------------------------------------------
 // Types (mirror the CharacterTable sub-objects we read)
+//
+// name, CV-name, and all {id, text} localization refs share the same shape as
+// texts.ts's LocalizedText. Reusing that single canonical type here (instead
+// of file-private LocalizedField / CvField duplicates) keeps one name for the
+// {id, text} contract across the whole character domain.
 // ---------------------------------------------------------------------------
-
-/** A single CV entry inside CharacterEntry.cvName. */
-interface CvField {
-  id: string;
-  text: string;
-}
 
 /** The cvName sub-object shape. */
 interface CvNameObject {
-  ChiCVName?: CvField;
-  EngCVName?: CvField;
-  JapCVName?: CvField;
-  KorCVName?: CvField;
+  ChiCVName?: LocalizedText;
+  EngCVName?: LocalizedText;
+  JapCVName?: LocalizedText;
+  KorCVName?: LocalizedText;
   charId?: string;
-}
-
-/** The `{id, text}` localization shape used by name/desc fields. */
-interface LocalizedField {
-  id: string;
-  text: string;
 }
 
 /** Raw CharacterTable.json entry. Only fields we read are typed. */
 export interface CharacterEntry {
   charId: string;
-  name: LocalizedField;
+  name: LocalizedText;
   engName?: string;
   phoneticName?: string;
   profession: number;
