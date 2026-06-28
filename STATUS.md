@@ -145,5 +145,5 @@ Endfield-MCP/
 代码债务：
 
 - [x] `SCHEMA_TODO` 残留 — dev 已清理（PR #8）：datasets.ts / startupSync.ts ×2 共三处 SCHEMA_TODO，外加 config.ts 一处相关过时占位注释，均改为陈述性
-- [x] `characterProfiles.ts` 的 `RecordField` 与 `texts.ts` 的 `LocalizedText` 类型重复 — dev 已统一（refactor 分支）：删除 `RecordField`，4 个字段改用 `LocalizedText`，消除 4 处 `as` 强转；纯类型层改动，运行时行为不变
+- [x] `{id, text}` 本地化类型重复 — dev 已统一（refactor 分支）：删除 `characterProfiles.ts` 的 `RecordField` + `characterTable.ts` 的 `LocalizedField` 与 `CvField` 三个文件私有重复定义，全部改用 `texts.ts` 导出的 `LocalizedText`；消除 `characterProfiles.ts` 的 4 处 `as` 强转；纯类型层改动，运行时行为不变
 - [ ] `characterEnums.ts` 的三个枚举映射是硬编码（已对齐真实数据验证，但理想情况应从 `CharProfessionTable`/`CharTypeTable` 动态读取）
