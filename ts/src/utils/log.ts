@@ -1,7 +1,7 @@
 /**
  * Shared stderr logger.
  *
- * All EndField-MCP logging goes to stderr — stdout is reserved for the
+ * All Endfield-MCP logging goes to stderr — stdout is reserved for the
  * MCP JSON-RPC channel in stdio mode. Each module that logs creates a
  * scoped logger via `createLogger("ef.xxx")` so log lines are prefixed
  * with their origin for easy filtering.

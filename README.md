@@ -54,8 +54,8 @@ The selection rationale is documented so future contributors don't re-litigate i
 **Prerequisites:** [Bun](https://bun.sh) ≥ 1.2.
 
 ```bash
-git clone https://github.com/3aKHP/EndFiled-MCP.git
-cd EndFiled-MCP/ts
+git clone https://github.com/3aKHP/Endfield-MCP.git
+cd Endfield-MCP/ts
 bun install
 ```
 
@@ -72,7 +72,7 @@ Or add to your MCP client config (paths use forward slashes on all platforms; on
   "mcpServers": {
     "endfield": {
       "command": "bun",
-      "args": ["run", "/absolute/path/to/EndFiled-MCP/ts/src/server.ts"]
+      "args": ["run", "/absolute/path/to/Endfield-MCP/ts/src/server.ts"]
     }
   }
 }
@@ -170,8 +170,8 @@ v0.1 规划阶段我们评估了每个候选的终末地 wiki / 数据源，按�
 **前置条件：** [Bun](https://bun.sh) ≥ 1.2。
 
 ```bash
-git clone https://github.com/3aKHP/EndFiled-MCP.git
-cd EndFiled-MCP/ts
+git clone https://github.com/3aKHP/Endfield-MCP.git
+cd Endfield-MCP/ts
 bun install
 ```
 
@@ -188,7 +188,7 @@ bun run src/server.ts
   "mcpServers": {
     "endfield": {
       "command": "bun",
-      "args": ["run", "/绝对路径/EndFiled-MCP/ts/src/server.ts"]
+      "args": ["run", "/绝对路径/Endfield-MCP/ts/src/server.ts"]
     }
   }
 }

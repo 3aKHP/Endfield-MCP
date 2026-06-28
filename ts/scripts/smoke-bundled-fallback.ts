@@ -6,7 +6,7 @@
  * server's FallbackStore transparently serves reads from the bundled
  * snapshot (ts/data/endfield/).
  *
- * This mirrors what an npm-installed EndField-MCP experiences on first
+ * This mirrors what an npm-installed Endfield-MCP experiences on first
  * run with no network: the bundled snapshot ships in the package, so
  * GameData tools work immediately, then auto-sync refreshes in the
  * background when network becomes available.

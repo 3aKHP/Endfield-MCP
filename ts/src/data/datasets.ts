@@ -1,5 +1,5 @@
 /**
- * Dataset specifications for EndField-MCP.
+ * Dataset specifications for Endfield-MCP.
  *
  * Each dataset describes one GitHub Release asset from the self-hosted
  * EndFieldGameData mirror. The sync layer (`./sync.ts`) consumes these
