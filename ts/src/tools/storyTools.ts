@@ -40,9 +40,9 @@ export function registerStoryTools(server: McpServer): void {
   server.tool(
     "ef_list_story_chapters",
     [
-      "列出《明日方舟：终末地》的剧情章节结构。",
-      "返回所有章节（主线 e1-e10、支线 sm、角色故事 c、活动 a 等）及其包含的场景数量和显示名称。",
-      "这是探索剧情的第一步——获取章节 ID 后传入 ef_list_stories 查看该章节下的所有对话场景。",
+      "列出《明日方舟：终末地》的剧情章节结构（浏览剧情目录）。",
+      "返回所有章节（主线 e1-e10、支线 sm、角色故事 c、活动 a 等）及其场景数量和显示名称。拿到章节 ID 后传给 ef_list_stories 查看该章下的所有对话场景。",
+      "适用场景：想系统阅读某段剧情、浏览全部章节范围，或定位某个故事属于哪条线时使用。这是探索剧情的第一步。若已知关键词要直接找片段，用 ef_search_stories 更快。",
     ].join(" "),
     {},
     withGracefulError("story bundle", async () => {
@@ -66,8 +66,8 @@ export function registerStoryTools(server: McpServer): void {
     "ef_list_stories",
     [
       "列出指定章节下的所有对话场景。",
-      "传入章节 ID（从 ef_list_story_chapters 获取，如「e1」「sm1」「c6」），返回该章节下所有场景的 key、所属任务、场景号、行数和预览文本。",
-      "获取场景 key 后传入 ef_read_story 阅读完整对话内容。",
+      "传入章节 ID（从 ef_list_story_chapters 获取，如「e1」「sm1」「c6」），返回该章下所有场景的 key、所属任务、场景号、行数和预览文本。拿到场景 key 后传给 ef_read_story 阅读完整对话。",
+      "适用场景：已选定某章节、想看这一章里有哪些具体场景（按任务/场景号排列），从中挑出要细读的那段时使用。",
     ].join(" "),
     {
       chapter_id: z
@@ -103,9 +103,9 @@ export function registerStoryTools(server: McpServer): void {
   server.tool(
     "ef_read_story",
     [
-      "读取一个对话场景的完整台词。",
-      "返回该场景的所有对话行（角色名 + 台词）、旁白、以及玩家选项（如果有）。这是阅读剧情文本的核心工具。",
-      "传入场景 key（从 ef_list_stories 获取，如「black_a1m6d2_3」）。对话行格式为「角色名：台词」，旁白格式为「*文本*」。",
+      "读取一个对话场景的完整台词（阅读剧情文本的核心工具）。",
+      "返回该场景的所有对话行（角色名：台词）、旁白（*斜体*）、玩家选项（如果有）。需要场景 key（从 ef_list_stories 或 ef_search_stories 获取，如「black_a1m6d2_3」）。",
+      "适用场景：已定位到某个场景、想读它的完整对话原文时使用。可设 include_narration=false 只保留台词、跳过场景描写。若还不知场景 key，先用 ef_list_stories 或 ef_search_stories 查找。",
     ].join(" "),
     {
       conv_key: z
@@ -154,9 +154,9 @@ export function registerStoryTools(server: McpServer): void {
   server.tool(
     "ef_search_stories",
     [
-      "在所有剧情对话中执行正则全文搜索。",
-      "用于按关键词、角色名、地点、事件等查找剧情片段，如「源石」「陈千语」「塔卫二」。",
-      "返回匹配的场景 key、所属任务、预览片段。获取 key 后用 ef_read_story 阅读完整内容。",
+      "在所有剧情对话中执行正则全文搜索（跨剧情找片段）。",
+      "用于按关键词、角色名、地点、事件等查找剧情片段，如「源石」「陈千语」「塔卫二」。返回匹配的场景 key、所属任务和预览片段。",
+      "适用场景：记得某段剧情的关键词但不知在哪一章、想找某角色出场的所有片段、或要搜集某个设定/事件的所有提及时使用。拿到 key 后用 ef_read_story 读全文。若想系统浏览章节用 ef_list_story_chapters。",
     ].join(" "),
     {
       pattern: z
