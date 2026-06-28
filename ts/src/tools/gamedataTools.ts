@@ -38,9 +38,9 @@ export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_get_character_archives",
     [
-      "获取指定角色的档案资料（背景故事文本）。",
-      "返回角色的基础档案、人事简述、档案资料等背景故事文本——这是写人物向同人作品时的核心素材。",
-      "传入角色 ID（从 ef_list_characters 获取）或准确角色名（默认语言或英文）。若需查询语音台词请用 ef_get_character_voices；若需职业/稀有度等数值请用 ef_get_character_basic_info。",
+      "读取角色的档案资料（背景故事文本，人物向同人创作的核心素材）。",
+      "返回角色的基础档案、人事简述、档案资料等背景故事文本。需要角色 ID（从 ef_list_characters 获取）或准确角色名（默认语言或英文）。",
+      "适用场景：写同人需要角色的背景设定、身世、人际关系等叙事素材时使用。若要台词语气用 ef_get_character_voices，若要职业/星级等数值用 ef_get_character_basic_info。",
     ].join(" "),
     {
       id_or_name: z
@@ -78,9 +78,9 @@ export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_get_character_voices",
     [
-      "获取指定角色的所有语音台词记录。",
-      "返回包含触发条件（如「行动准备1」「编入队伍1」「观看作战记录」）及对应台词文本的完整列表——这是塑造角色语气和语言风格的核心素材。",
-      "传入角色 ID 或准确角色名。每角色约 55 条语音。若需背景故事请用 ef_get_character_archives。",
+      "读取角色的语音台词（塑造角色语气和语言风格的核心素材）。",
+      "返回约 55 条带触发条件（如「行动准备1」「编入队伍1」「观看作战记录」）及对应台词文本的完整列表。需要角色 ID 或准确角色名。",
+      "适用场景：要让角色「开口说话」、还原其说话习惯/口头禅/语气，或需要战斗/日常台词原文时使用。若要背景故事用 ef_get_character_archives，若要数值定位用 ef_get_character_basic_info。",
     ].join(" "),
     {
       id_or_name: z
@@ -120,9 +120,9 @@ export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_get_character_basic_info",
     [
-      "获取指定角色的基本数值信息。",
-      "返回职业、稀有度（星级）、属性、武器类型、声优（中/英/日/韩）、阵营等结构化信息。适合快速了解角色定位。",
-      "若需背景故事请用 ef_get_character_archives；若需语音台词请用 ef_get_character_voices。",
+      "查询角色的基本数值信息（职业、星级、属性、武器、声优等）。",
+      "返回职业、稀有度（星级）、属性、武器类型、声优（中/英/日/韩）、阵营等结构化字段。需要角色 ID 或准确角色名。",
+      "适用场景：需要快速确认角色定位、属性克制、星级、声优或所属阵营时使用。若要背景故事用 ef_get_character_archives，若要台词用 ef_get_character_voices。",
     ].join(" "),
     {
       id_or_name: z
@@ -173,9 +173,9 @@ export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_list_characters",
     [
-      "列出《明日方舟：终末地》的所有可玩角色。",
-      "返回每个角色的 ID、名称、职业、稀有度、属性和阵营的简表，按游戏内排序顺序排列。",
-      "这是探索角色数据的第一步——先用此工具获取准确 ID 或名称，再传入 ef_get_character_archives（档案）/ ef_get_character_voices（语音）/ ef_get_character_basic_info（数值）获取详细内容。",
+      "列出《明日方舟：终末地》的所有可玩角色（浏览角色名册）。",
+      "返回每个角色的 ID、名称、职业、稀有度、属性和阵营的简表，按游戏内排序。这是探索角色数据的第一步——先拿准确 ID 或名称，再传给 ef_get_character_archives（档案）/ ef_get_character_voices（语音）/ ef_get_character_basic_info（数值）。",
+      "适用场景：不确定角色 ID 或准确名、想浏览全部角色、或需要批量获取角色列表时使用。若已知要找的角色特征（职业/属性/阵营），用 ef_search_characters 更直接。",
     ].join(" "),
     {
       lang: langSchema.describe("返回内容使用的语言，默认 CN（简体中文）。"),
@@ -201,9 +201,9 @@ export function registerGamedataTools(server: McpServer): void {
   server.tool(
     "ef_search_characters",
     [
-      "在角色名称、ID、职业、属性、阵营等字段中执行正则搜索。",
-      "用于按特征模糊查找角色，如「近卫」「6」「Physical」「ENDFIELD」。",
-      "搜索范围：名称（默认语言 + 英文）、ID、职业、属性（含中文映射）、阵营。返回匹配字段和简短摘要。",
+      "按特征模糊查找角色（正则搜索名称/职业/属性/阵营等字段）。",
+      "用于按职业、属性、星级、阵营等特征定位角色，如「近卫」「6」「Physical」「ENDFIELD」。搜索范围：名称（默认语言 + 英文）、ID、职业、属性（含中文映射）、阵营，返回匹配字段和简短摘要。",
+      "适用场景：知道角色特征但不知确切名（如「找一个 6 星火属性重装」）、或要按阵营/职业筛选一批角色时使用。若想浏览全部角色用 ef_list_characters，拿到 ID 后再查档案/语音/数值。",
     ].join(" "),
     {
       pattern: z
