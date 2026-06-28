@@ -95,14 +95,18 @@ jobs:
       # token issued by GitHub Actions (no long-lived NPM_TOKEN needed) —
       # setup-node still must run so the registry endpoint is configured.
       #
-      # Node 22+ is REQUIRED, not optional: the OIDC token-exchange flow
-      # landed in npm 11.5.1, which only ships with Node ≥ 22.14.0. Node 20
-      # bundles npm 10.x, which has no OIDC support and will fail with
-      # ENEEDAUTH on publish. Do NOT downgrade to 20.
+      # Node 24 is REQUIRED: Trusted Publishing's OIDC PUT flow needs npm
+      # ≥ 11.5.1, and Node 24 is the first LTS that bundles npm 11.x.
+      # Node 22 bundles npm 10.x — npm 10 can SIGN provenance (so the log
+      # shows "Signed provenance statement") but its OIDC PUT path is
+      # incomplete and the registry returns a misleading E404 instead of
+      # ENEEDAUTH. Node 20 fails the same way. Do NOT downgrade below 24.
+      # Verified empirically: PRTS-MCP's successful publishes run on
+      # Node 24.14.0 + npm 11.9.0.
       - name: Setup Node.js for npm publish
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
