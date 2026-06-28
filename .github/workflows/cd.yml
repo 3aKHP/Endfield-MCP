@@ -67,6 +67,15 @@ jobs:
             echo "ERROR: bundled story data not populated"
             exit 1
           fi
+          # Sanity: at least one conv scene extracted. Catches a malformed
+          # mirror zip that ships index.json but an empty conv/ — such a zip
+          # would pass requiredFiles validation (conv isn't in requiredFiles,
+          # see datasets.ts STORY_REQUIRED_FILES) yet make every readStory()
+          # return null at runtime.
+          if ! ls data/endfield/story/conv/*.json >/dev/null 2>&1; then
+            echo "ERROR: bundled story conv/ is empty"
+            exit 1
+          fi
           echo "bundled tables:"
           ls data/endfield/tables/
           ls data/endfield/i18n/
