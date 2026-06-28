@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * EndField-MCP server entry point.
+ * Endfield-MCP server entry point.
  *
  * Creates the McpServer instance, binds the wiki client to the loaded
  * config, registers tools, then dispatches to the transport selected by
@@ -138,7 +138,7 @@ async function main(): Promise<void> {
 
   log(
     "INFO",
-    `EndField-MCP ${SERVER_VERSION} starting (transport=${cfg.transport}, wiki=${cfg.wikiEndpoint})`,
+    `Endfield-MCP ${SERVER_VERSION} starting (transport=${cfg.transport}, wiki=${cfg.wikiEndpoint})`,
   );
 
   // Fire-and-forget. In v0.1 this is a no-op; in v0.2+ the background

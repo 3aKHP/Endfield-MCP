@@ -1,8 +1,8 @@
-# EndField-MCP Roadmap
+# Endfield-MCP Roadmap
 
 _Last updated: 2026-06-29_
 
-EndField-MCP is pre-1.0. This document tracks **what comes next**. For
+Endfield-MCP is pre-1.0. This document tracks **what comes next**. For
 shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release

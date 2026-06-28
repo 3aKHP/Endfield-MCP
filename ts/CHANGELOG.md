@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to EndField-MCP (TypeScript implementation) are recorded
+All notable changes to Endfield-MCP (TypeScript implementation) are recorded
 here. Format follows [Keep a Changelog](https://keepachangelog.com/),
 versioning follows [Semantic Versioning](https://semver.org/).
 
@@ -16,6 +16,7 @@ No changes yet.
 
 ### Changed
 
+- **Project rename `EndField`/`EndFiled` → `Endfield`**: corrected the project name to match the official game spelling (Arknights: **Endfield**). Two wrong forms had proliferated since the repo's creation — a transposed-character typo `EndFiled` (the GitHub repo name + derived git URLs, package.json metadata) and a non-canonical capitalization `EndField` (~35 doc/comment/runtime-string occurrences). All unified to `Endfield-MCP`. The npm package name `endfield-mcp`, all `endfield` runtime data paths, and the separate `EndFieldGameData` mirror repo are unchanged (correct or out of scope). Two runtime strings updated: the GitHub-sync User-Agent (`sync.ts`) and the server startup log line (`server.ts`).
 - **npm Trusted Publishing**: CD now publishes with `--provenance` and authenticates via GitHub Actions OIDC instead of a long-lived `NPM_TOKEN` secret. The `NODE_AUTH_TOKEN` env binding is removed; npm trust is established through the Trusted Publisher configured on the npm package. `setup-node` is bumped to Node 22 — Trusted Publishing's OIDC token-exchange flow requires npm ≥ 11.5.1, which only ships with Node ≥ 22.14.0 (Node 20's npm 10.x has no OIDC support and fails with ENEEDAUTH). `id-token: write` was already present (declared for provenance in v0.2.0 but unused until now).
 - **Mirror contract doc** (`docs/admin/mirror-release-workflow.md`): rewritten from a speculative design draft into a locked consumer-side contract — documents the published zip structures (tables + story), version-numbering policy, and the current manual-export reality, with the self-hosted-runner automation deferred. Three stale `SCHEMA_TODO` comments (`datasets.ts`, `startupSync.ts` ×2) plus one related stale placeholder (`config.ts`) replaced with declarative notes (the mirror is live, requiredFiles are pinned, readers landed in v0.2/v0.3).
 
@@ -131,7 +132,7 @@ yet.
   that motivation.
 - **Bun runtime** (not Node). Official MCP SDK first-class support;
   native `fetch`, native `Bun.serve`, native `bun:test`.
-- **Stateless HTTP transport** (no session tracking). EndField-MCP has no
+- **Stateless HTTP transport** (no session tracking). Endfield-MCP has no
   per-session state, so stateless is strictly simpler than PRTS-MCP's
   session-pooled approach with no capability loss.
 - **Wiki source: endfield.wiki.gg**. Verified MediaWiki 1.43.6 with live

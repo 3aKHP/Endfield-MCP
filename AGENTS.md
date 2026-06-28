@@ -1,19 +1,19 @@
-# Codex Instructions for EndField-MCP
+# Codex Instructions for Endfield-MCP
 
 This file is intentionally repo-local so a fresh Codex / Claude session starts with the known-good runtime on this Windows workstation.
 
 ## 项目性质
 
-EndField-MCP 是面向《明日方舟：终末地》同人创作的 MCP Server，**单 TypeScript 实现**（基于 Bun）。这是与 PRTS-MCP（明日方舟本体的姊妹项目）的关键区别——PRTS-MCP 因 Python asyncio 在 Streamable HTTP 上的历史包袱而维护双实现，本项目一套 TS 同时覆盖 stdio + HTTP，不需要双实现。
+Endfield-MCP 是面向《明日方舟：终末地》同人创作的 MCP Server，**单 TypeScript 实现**（基于 Bun）。这是与 PRTS-MCP（明日方舟本体的姊妹项目）的关键区别——PRTS-MCP 因 Python asyncio 在 Streamable HTTP 上的历史包袱而维护双实现，本项目一套 TS 同时覆盖 stdio + HTTP，不需要双实现。
 
-| 维度 | 现状（v0.1） |
+| 维度 | 现状（v0.3.1） |
 |------|--------------|
 | 语言 / 运行时 | TypeScript on Bun ≥ 1.2 |
 | Transports | stdio（默认）+ Streamable HTTP stateless（`Bun.serve`） |
 | Wiki 源 | endfield.wiki.gg（MediaWiki 1.43.6，需 WAF 绕过头） |
-| GameData 源 | 未接入（v0.2 通过自建镜像） |
-| 工具数 | 6 个 Wiki 工具（`ef_*` 前缀） |
-| 数据同步 | 占位 no-op（v0.2 接入镜像 sync） |
+| GameData 源 | 自建镜像 `3aKHP/EndFieldGameData`（tables + story，自动同步 + bundled 兜底） |
+| 工具数 | 15 个（6 Wiki + 5 Character + 4 Story，`ef_*` 前缀） |
+| 数据同步 | 实装（GitHub Release sync + 级联 fallback + 重试退避） |
 
 ## 启动必读
 
@@ -103,7 +103,7 @@ bun run scripts/smoke-live.ts
 
 ## 仓库当前状态
 
-- **Git 仓库尚未 `git init`**。骨架代码已完成并通过验收（见 STATUS.md），但还没有版本控制。
-- **没有 `main` / `dev` 分支**。第一次提交时建立双分支模型（见 WORKFLOW.md）。
-- **没有 CHANGELOG 发布条目**。`ts/CHANGELOG.md` 里只有 `[Unreleased]` 段。
-- 在 git 初始化之前，本文件和 WORKFLOW.md 描述的双分支模型、CR 流程、版本同步清单都是**目标状态**。按精神执行，等 git 就位后正式生效。
+- **Git 仓库已初始化**，双分支模型（`main` + `dev`）已建立并正常运作。
+- 已发布版本：v0.1.0（骨架）→ v0.2.0（GameData）→ v0.3.0（创作工具）→ v0.3.1（技术债清理）。CHANGELOG 维护完整发布条目。
+- 双分支模型、CR 流程、版本同步清单（见 WORKFLOW.md）均已正式生效。
+- 最新发布状态详见 [STATUS.md](STATUS.md)。

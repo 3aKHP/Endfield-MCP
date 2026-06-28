@@ -1,5 +1,5 @@
 /**
- * GitHub-backed data sync for EndField-MCP.
+ * GitHub-backed data sync for Endfield-MCP.
  *
  * Mirrors the design of PRTS-MCP's `ts/src/data/sync.ts` — the same proven
  * decision tree, cascade fallback, and atomic-write semantics. The only
@@ -40,7 +40,10 @@ import { parseMirrors } from "../config.js";
 // Constants
 // ---------------------------------------------------------------------------
 
-const GITHUB_UA = "EndField-MCP-Bot/0.1 (Arknights: Endfield fan-creation helper)";
+// Version here is intentionally a coarse literal (major.minor), not derived
+// from SERVER_VERSION: data/ must not depend on the upper server layer, and
+// a precise patch version in a UA adds no value. Bump manually on minor+.
+const GITHUB_UA = "Endfield-MCP-Bot/0.3 (Arknights: Endfield fan-creation helper)";
 
 /** Skip the upstream tag check if cached data is fresher than this (seconds). */
 const CACHE_TTL_SECONDS = 3600;
@@ -469,7 +472,7 @@ async function safeExtractZip(
  *
  * Keeps the data distribution path aligned with PRTS-MCP's pattern
  * (release zip → local extraction → DirectoryStore reads) while preserving
- * whatever on-disk layout the EndField mirror ships.
+ * whatever on-disk layout the Endfield mirror ships.
  */
 export async function syncReleaseArchive(
   spec: ReleaseArchiveSpec,

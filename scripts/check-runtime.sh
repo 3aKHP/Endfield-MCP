@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quick runtime environment audit for EndField-MCP (Unix).
+# Quick runtime environment audit for Endfield-MCP (Unix).
 #
 # Usage:
 #   ./scripts/check-runtime.sh        # audit only

@@ -21,11 +21,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/3aKHP/EndFiled-MCP.git",
+    "url": "https://github.com/3aKHP/Endfield-MCP.git",
     "directory": "ts"
   },
-  "homepage": "https://github.com/3aKHP/EndFiled-MCP",
-  "bugs": "https://github.com/3aKHP/EndFiled-MCP/issues",
+  "homepage": "https://github.com/3aKHP/Endfield-MCP",
+  "bugs": "https://github.com/3aKHP/Endfield-MCP/issues",
   "license": "MIT",
   "keywords": [
     "mcp",

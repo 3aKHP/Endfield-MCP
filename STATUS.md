@@ -1,4 +1,4 @@
-# EndField-MCP 项目状态
+# Endfield-MCP 项目状态
 
 _Last updated: 2026-06-29_
 
@@ -50,7 +50,7 @@ Wiki 内容以英文为主；调用方 LLM 负责桥接到用户语言。GameDat
 ## 仓库结构
 
 ```
-EndFiled-MCP/
+Endfield-MCP/
 ├── ts/                          # 唯一实现
 │   ├── src/
 │   │   ├── server.ts            # 入口：按 EF_TRANSPORT 选 stdio / http

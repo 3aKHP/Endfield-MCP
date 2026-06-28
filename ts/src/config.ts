@@ -1,5 +1,5 @@
 /**
- * Runtime configuration for EndField-MCP.
+ * Runtime configuration for Endfield-MCP.
  *
  * Path design mirrors PRTS-MCP's config layer, adapted for the Endfield
  * data-source reality:
