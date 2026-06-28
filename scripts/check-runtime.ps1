@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Quick runtime environment audit for EndField-MCP (Windows / PowerShell 7).
+Quick runtime environment audit for Endfield-MCP (Windows / PowerShell 7).
 
 .DESCRIPTION
 Verifies the host has the toolchain the repo expects:

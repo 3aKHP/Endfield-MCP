@@ -1,4 +1,4 @@
-# 开发工作流 — EndField-MCP
+# 开发工作流 — Endfield-MCP
 
 本文件记录 git 工作流契约：分支模型、迭代循环、独立 CR 规范、版本同步清单。**这是流程文档，不是代码规范**——代码层面的硬原则见 [`STYLE.md`](STYLE.md)；运行时环境见 [`../../AGENTS.md`](../../AGENTS.md)。
 

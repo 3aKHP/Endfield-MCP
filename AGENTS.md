@@ -1,10 +1,10 @@
-# Codex Instructions for EndField-MCP
+# Codex Instructions for Endfield-MCP
 
 This file is intentionally repo-local so a fresh Codex / Claude session starts with the known-good runtime on this Windows workstation.
 
 ## 项目性质
 
-EndField-MCP 是面向《明日方舟：终末地》同人创作的 MCP Server，**单 TypeScript 实现**（基于 Bun）。这是与 PRTS-MCP（明日方舟本体的姊妹项目）的关键区别——PRTS-MCP 因 Python asyncio 在 Streamable HTTP 上的历史包袱而维护双实现，本项目一套 TS 同时覆盖 stdio + HTTP，不需要双实现。
+Endfield-MCP 是面向《明日方舟：终末地》同人创作的 MCP Server，**单 TypeScript 实现**（基于 Bun）。这是与 PRTS-MCP（明日方舟本体的姊妹项目）的关键区别——PRTS-MCP 因 Python asyncio 在 Streamable HTTP 上的历史包袱而维护双实现，本项目一套 TS 同时覆盖 stdio + HTTP，不需要双实现。
 
 | 维度 | 现状（v0.1） |
 |------|--------------|
