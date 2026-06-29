@@ -1,5 +1,22 @@
 name: CD
 
+# Three-stage release pipeline, modeled on PRTS-MCP's cd-ts.yml:
+#   1. verify      — typecheck + test + build + tag-vs-package version check
+#   2. publish-npm — npm Trusted Publishing (OIDC) + smart dist-tag
+#   3. github-release — auto-extract CHANGELOG notes + npm tarball asset + GitHub Release
+#
+# Trigger: push a `v*` tag (e.g. v0.3.4). Each stage gates the next, so a
+# failing verify never publishes, and a failed publish never creates a Release.
+#
+# Differences from PRTS-MCP's pipeline (adapted for this project):
+#   - Single implementation (no `ts/` tag prefix) → version extracted via `${GITHUB_REF_NAME#v}`
+#   - Bun toolchain for verify/build (PRTS-MCP uses npm); Node 24 still required
+#     for the npm publish step (Trusted Publishing OIDC needs npm ≥ 11.5.1)
+#   - Bundled data fetched via `bun run scripts/fetch-bundled-data.ts` (PRTS-MCP
+#     uses a Python fetch_gamedata script)
+#   - Smoke test deferred (PRTS-MCP checks a fixed tool-name list; this project's
+#     tool set is still shifting pre-1.0 — revisit once stabilized)
+
 on:
   push:
     tags:
@@ -7,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish (e.g. 0.2.0)"
+        description: "Version to publish (e.g. 0.3.4)"
         required: true
 
 permissions:
@@ -19,14 +36,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish-npm:
-    name: Publish npm package
+  # -------------------------------------------------------------------------
+  # Stage 1: verify — build integrity + tag/package version match
+  # -------------------------------------------------------------------------
+  # Runs the full local validation gate plus a check that the pushed tag's
+  # version matches ts/package.json. The version check is a guardrail against
+  # the v0.3.3-class bug (server.ts reported a different version than
+  # package.json) generalized to the tag itself: a mismatched tag would
+  # publish a package whose npm version disagrees with its git tag, breaking
+  # the CHANGELOG-extraction step downstream and confusing consumers.
+  verify:
+    name: Verify (typecheck + test + build + version check)
     runs-on: ubuntu-latest
-    # `environment: npm` both gates deployment AND must match the environment
-    # name (if any) configured on the npm-side Trusted Publisher — a mismatch
-    # yields a 404 on publish. OIDC trust is keyed to repo + workflow file +
-    # environment; keep this name in sync with the npm Trusted Publisher form.
-    environment: npm
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +67,50 @@ jobs:
       - name: Test
         working-directory: ts
         run: bun test
+
+      - name: Build (tsc emit)
+        working-directory: ts
+        run: bun run build
+
+      - name: Check tag matches package version
+        working-directory: ts
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match package version ($PKG_VERSION)"
+            exit 1
+          fi
+          echo "Version check passed: $TAG_VERSION"
+
+  # -------------------------------------------------------------------------
+  # Stage 2: publish-npm — Trusted Publishing with smart dist-tag
+  # -------------------------------------------------------------------------
+  # Publishes to npm via OIDC Trusted Publishing (no long-lived NPM_TOKEN).
+  # The dist-tag step ensures prerelease versions (e.g. 0.4.0-dev.0) get tagged
+  # `dev` instead of `latest`, so `npm install endfield-mcp` keeps resolving to
+  # the last stable release. Without this, a prerelease tag push would clobber
+  # `latest` and every consumer would pull a dev build.
+  publish-npm:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    # `environment: npm` both gates deployment AND must match the environment
+    # name (if any) configured on the npm-side Trusted Publisher — a mismatch
+    # yields a 404 on publish. OIDC trust is keyed to repo + workflow file +
+    # environment; keep this name in sync with the npm Trusted Publisher form.
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        working-directory: ts
+        run: bun install --frozen-lockfile
 
       - name: Build (tsc emit)
         working-directory: ts
@@ -88,7 +153,22 @@ jobs:
 
       - name: Pack npm tarball
         working-directory: ts
-        run: bun run build && npm pack
+        run: npm pack
+
+      # Resolve the npm dist-tag from the version: prereleases (containing `-`)
+      # get a tag derived from the prerelease identifier (e.g. `0.4.0-dev.0` →
+      # `dev`), stables get `latest`. This keeps `npm install endfield-mcp`
+      # on the last stable release even when dev prereleases are published.
+      - name: Resolve npm dist-tag
+        id: dist_tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "${VERSION}" == *-* ]]; then
+            PRERELEASE="${VERSION#*-}"
+            echo "value=${PRERELEASE%%.*}" >> $GITHUB_OUTPUT
+          else
+            echo "value=latest" >> $GITHUB_OUTPUT
+          fi
 
       # setup-node with registry-url writes ~/.npmrc pointing at the npm
       # registry. Under Trusted Publishing, npm authenticates via the OIDC
@@ -110,10 +190,9 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ts
         run: |
-          npm publish --access public --provenance
+          npm publish --access public --provenance --tag "${{ steps.dist_tag.outputs.value }}"
 
       - name: Upload tarball artifact
         uses: actions/upload-artifact@v4
@@ -121,3 +200,88 @@ jobs:
           name: endfield-mcp-tarball
           path: ts/*.tgz
           retention-days: 30
+
+  # -------------------------------------------------------------------------
+  # Stage 3: github-release — auto-generated Release notes + tarball asset
+  # -------------------------------------------------------------------------
+  # Creates the GitHub Release that this project historically lacked (releases
+  # were npm-only). Extracts the matching version section from ts/CHANGELOG.md,
+  # appends install instructions, attaches the npm tarball, and marks prereleases
+  # as non-latest. Modeled on PRTS-MCP's cd-ts.yml github-release job.
+  github-release:
+    name: Create GitHub Release
+    needs: publish-npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # softprops/action-gh-release needs this to create the Release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+
+      - name: Install dependencies
+        working-directory: ts
+        run: bun install --frozen-lockfile
+
+      - name: Build (tsc emit)
+        working-directory: ts
+        run: bun run build
+
+      - name: Fetch bundled game data
+        working-directory: ts
+        run: bun run scripts/fetch-bundled-data.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pack npm tarball
+        working-directory: ts
+        run: npm pack
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "value=${VERSION}" >> $GITHUB_OUTPUT
+          if [[ "${VERSION}" == *-* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Extract the matching [VERSION] section from ts/CHANGELOG.md. The
+      # CHANGELOG follows Keep a Changelog format (## [version] — date — title),
+      # so a regex scoped between version headers isolates the right block.
+      # Falls back to a pointer if the section is missing (shouldn't happen —
+      # version-sync checklist requires the CHANGELOG entry before tagging).
+      - name: Extract changelog section
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          python3 - <<'PY' > release_notes.txt
+          import re, os
+          version = os.environ["VERSION"]
+          text = open("ts/CHANGELOG.md").read()
+          m = re.search(
+              r"## \[" + re.escape(version) + r"\][^\n]*\n(.*?)(?=\n## \[|\Z)",
+              text, re.DOTALL
+          )
+          print(m.group(1).strip() if m else "See CHANGELOG.md for details.")
+          PY
+
+      - name: Append install instructions
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          printf '\n---\n\n**Install**\n```bash\n# Run directly (Streamable HTTP on :5111)\nnpx endfield-mcp\n\n# Or install globally\nnpm install -g endfield-mcp@%s\n```\n\nMCP endpoint: `http://localhost:5111/mcp` (set EF_TRANSPORT=http)\n' \
+            "$VERSION" >> release_notes.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.txt
+          files: ts/endfield-mcp-*.tgz
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          make_latest: ${{ steps.version.outputs.prerelease == 'true' && 'false' || 'true' }}
