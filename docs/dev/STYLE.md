@@ -248,7 +248,7 @@ server.tool(
 | `STATUS.md` | 当前版本号 |
 | `ROADMAP.md` | 当前版本号 |
 
-tag 名带 `ts/` 前缀（与 PRTS-MCP 双 tag 模式对齐预留空间）：`ts/v0.2.0`。含 `-` 后缀的 tag 会被 CD workflow 识别为 prerelease。Tag 必须打在 `main` 分支上。
+tag 名**不带**实现前缀（本项目单实现，与 PRTS-MCP 的 `ts/v`/`python/v` 双 tag 模式不同）：`v0.3.4`。含 `-` 后缀的 tag 会被 CD workflow 识别为 prerelease，并打 `dev` dist-tag（不污染 `latest`）。Tag 必须打在 `main` 分支上。CD 的版本提取用 `${GITHUB_REF_NAME#v}`（不带 `ts/` 前缀剥离）。
 
 ## Commit 规范
 
