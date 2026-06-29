@@ -7,9 +7,10 @@
  * packed or the Docker image is built. Downloads the latest release
  * assets from 3aKHP/EndFieldGameData and extracts them.
  *
- * Pulls two datasets:
- *   - GAMEDATA_TABLES (endfield-tables.zip)  → tables/ + i18n/  (v0.2.0+)
- *   - STORY_CN       (endfield-story-CN.zip) → story/           (v0.3.1+)
+ * Pulls three datasets:
+ *   - GAMEDATA_TABLES (endfield-tables.zip)    → tables/ + i18n/  (v0.2.0+)
+ *   - STORY_CN       (endfield-story-CN.zip)   → story/           (v0.3.1+)
+ *   - WORLDVIEW      (endfield-worldview.zip)  → worldview/       (v0.4.0+)
  *
  * Unlike the runtime sync path (startupSync.ts → sync.ts), this script:
  *   - always downloads (ignores TTL cache)
@@ -31,6 +32,7 @@ import {
   archiveSpecForDataset,
   GAMEDATA_TABLES,
   STORY_CN,
+  WORLDVIEW,
   type ReleaseDatasetSpec,
 } from "../src/data/datasets.js";
 import { syncReleaseArchive } from "../src/data/sync.js";
@@ -78,6 +80,10 @@ const TARGETS: readonly FetchTarget[] = [
   // server.ts (join(bundledDataPath, "story")). The zip's top-level
   // index.json / missions.json / conv/ land directly in story/.
   { spec: STORY_CN, extractDir: "story", ownedDirs: ["story"] },
+  // Worldview extracts into outDir/worldview/ — matches worldviewBundled path
+  // in server.ts (join(bundledDataPath, "worldview")). The zip's top-level
+  // prts/, wiki/, and RichContentTable.json land directly in worldview/.
+  { spec: WORLDVIEW, extractDir: "worldview", ownedDirs: ["worldview"] },
 ];
 
 console.log(`=== fetch-bundled-data ===`);

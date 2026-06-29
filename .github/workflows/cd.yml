@@ -153,11 +153,24 @@ jobs:
             echo "ERROR: bundled story conv/ is empty"
             exit 1
           fi
+          # Worldview: RichContentTable (the contentId→body bridge) plus a
+          # representative PRTS table must be present, else worldview tools
+          # silently report "no data" for every offline install.
+          if [ ! -f data/endfield/worldview/RichContentTable.json ]; then
+            echo "ERROR: bundled worldview RichContentTable.json not populated"
+            exit 1
+          fi
+          if [ ! -f data/endfield/worldview/prts/PrtsAllItem.json ]; then
+            echo "ERROR: bundled worldview prts/ not populated"
+            exit 1
+          fi
           echo "bundled tables:"
           ls data/endfield/tables/
           ls data/endfield/i18n/
           echo "bundled story:"
           ls data/endfield/story/
+          echo "bundled worldview:"
+          ls data/endfield/worldview/
 
       - name: Pack npm tarball
         working-directory: ts
