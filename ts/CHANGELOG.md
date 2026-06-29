@@ -24,6 +24,22 @@ No changes yet.
   (newest first) and picks the first Release that actually contains the
   requested `assetName` — robust to any multi-asset Release layout.
 
+- **`checkLatestRelease` now distinguishes network failure from genuine
+  absence.** It throws on network/API errors and returns `null` only when the
+  API confirmed no scanned Release carries the asset. `syncRelease` uses this
+  to gate the blind-download fallback: the `releases/latest/download/<asset>`
+  shortcut now fires only when the API was unreachable (where it's our only
+  bootstrap path through a mirror), never when the API confirmed the asset is
+  absent (where it would 404 against the wrong release). The distinct error
+  messages also make a misconfigured `assetName` diagnosable instead of
+  masquerading as "Network unavailable". Addresses CR findings (subagent +
+  khpilot bot, PR #18).
+
+- **Defensive `per_page=30` guard.** If a full page of releases is scanned
+  without a match, a warning is emitted so an asset on a later page (or a
+  mirror that grew past 30 releases) doesn't fail silently as "not found".
+  Forward-looking — the mirror currently ships 3 releases.
+
 ## [0.3.3] — 2026-06-29 — Server-version sync fix
 
 ### Fixed
