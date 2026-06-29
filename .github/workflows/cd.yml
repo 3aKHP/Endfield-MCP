@@ -75,10 +75,18 @@ jobs:
       - name: Check tag matches package version
         working-directory: ts
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # On a tag push GITHUB_REF_NAME is "v0.3.4"; on workflow_dispatch it's
+          # the branch name, so use the explicit version input instead. Without
+          # this guard the check would compare a branch name to package.json and
+          # always fail on manual dispatch.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            TAG_VERSION="${{ inputs.version }}"
+          else
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+          fi
           PKG_VERSION=$(node -p "require('./package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match package version ($PKG_VERSION)"
+            echo "::error::Version ($TAG_VERSION) does not match package version ($PKG_VERSION)"
             exit 1
           fi
           echo "Version check passed: $TAG_VERSION"
@@ -162,7 +170,13 @@ jobs:
       - name: Resolve npm dist-tag
         id: dist_tag
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          # Same trigger-aware version resolution as the verify stage's check:
+          # tag push → strip the v prefix; workflow_dispatch → use the input.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           if [[ "${VERSION}" == *-* ]]; then
             PRERELEASE="${VERSION#*-}"
             echo "value=${PRERELEASE%%.*}" >> $GITHUB_OUTPUT
@@ -190,6 +204,10 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Publish to npm
+        # No explicit `if:` guard: this job only runs because `on:` limits
+        # triggers to tag pushes (and manual dispatch), and `needs: verify`
+        # gates it. If a new trigger is ever added to `on:`, add a guard here
+        # so an unintended event can't publish.
         working-directory: ts
         run: |
           npm publish --access public --provenance --tag "${{ steps.dist_tag.outputs.value }}"
@@ -206,8 +224,10 @@ jobs:
   # -------------------------------------------------------------------------
   # Creates the GitHub Release that this project historically lacked (releases
   # were npm-only). Extracts the matching version section from ts/CHANGELOG.md,
-  # appends install instructions, attaches the npm tarball, and marks prereleases
-  # as non-latest. Modeled on PRTS-MCP's cd-ts.yml github-release job.
+  # appends install instructions, attaches the EXACT tarball published to npm
+  # (downloaded as a job artifact — not rebuilt — so the Release asset and the
+  # npm package are byte-identical), and marks prereleases as non-latest.
+  # Modeled on PRTS-MCP's cd-ts.yml github-release job.
   github-release:
     name: Create GitHub Release
     needs: publish-npm
@@ -217,33 +237,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      # Download the tarball artifact uploaded by publish-npm rather than
+      # rebuilding + re-fetching bundled data. This guarantees the Release
+      # attachment is byte-identical to what npm received (a re-fetch could
+      # pull different data if the mirror updated between the two jobs), and
+      # it's faster (no Bun install/build/fetch/pack). The artifact contains
+      # endfield-mcp-<version>.tgz at the archive root.
+      - name: Download published tarball
+        uses: actions/download-artifact@v4
         with:
-          bun-version: "1.3"
-
-      - name: Install dependencies
-        working-directory: ts
-        run: bun install --frozen-lockfile
-
-      - name: Build (tsc emit)
-        working-directory: ts
-        run: bun run build
-
-      - name: Fetch bundled game data
-        working-directory: ts
-        run: bun run scripts/fetch-bundled-data.ts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pack npm tarball
-        working-directory: ts
-        run: npm pack
+          name: endfield-mcp-tarball
+          path: tarball
 
       - name: Extract version from tag
         id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          # Trigger-aware: tag push → strip v prefix; workflow_dispatch → input.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           echo "value=${VERSION}" >> $GITHUB_OUTPUT
           if [[ "${VERSION}" == *-* ]]; then
             echo "prerelease=true" >> $GITHUB_OUTPUT
@@ -275,13 +289,25 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
-          printf '\n---\n\n**Install**\n```bash\n# Run directly (Streamable HTTP on :5111)\nnpx endfield-mcp\n\n# Or install globally\nnpm install -g endfield-mcp@%s\n```\n\nMCP endpoint: `http://localhost:5111/mcp` (set EF_TRANSPORT=http)\n' \
-            "$VERSION" >> release_notes.txt
+          # Append the static prose first (no variable interpolation → no
+          # printf format-specifier risk), then the version line separately so
+          # $VERSION is passed as a printf ARGUMENT, not spliced into the
+          # format string. A corrupted tag containing '%' can't corrupt output.
+          {
+            printf '\n---\n\n**Install**\n```bash\n'
+            printf '# Run directly (Streamable HTTP on :5111)\nnpx endfield-mcp\n\n'
+            printf '# Or install globally\n'
+          } >> release_notes.txt
+          printf 'npm install -g endfield-mcp@%s\n' "$VERSION" >> release_notes.txt
+          {
+            printf '```\n\n'
+            printf 'MCP endpoint: `http://localhost:5111/mcp` (set EF_TRANSPORT=http)\n'
+          } >> release_notes.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           body_path: release_notes.txt
-          files: ts/endfield-mcp-*.tgz
+          files: tarball/endfield-mcp-*.tgz
           prerelease: ${{ steps.version.outputs.prerelease }}
           make_latest: ${{ steps.version.outputs.prerelease == 'true' && 'false' || 'true' }}
