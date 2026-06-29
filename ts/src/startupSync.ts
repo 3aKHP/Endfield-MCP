@@ -25,10 +25,12 @@ import {
   archiveSpecForDataset,
   GAMEDATA_TABLES,
   STORY_CN,
+  WORLDVIEW,
 } from "./data/datasets.js";
 import { clearCharacterCaches } from "./data/characters.js";
 import { clearTextCaches } from "./data/texts.js";
 import { clearStoryCaches } from "./data/story.js";
+import { clearWorldviewCaches } from "./data/worldview.js";
 import { createLogger } from "./utils/log.js";
 import {
   type SyncResult,
@@ -196,6 +198,30 @@ function makeStorySyncRunner(
   };
 }
 
+/**
+ * Build the sync runner for the Worldview dataset.
+ *
+ * Worldview data lives in its own subdirectory under cfg.dataPath, mirroring
+ * the story layout. Cache clearing drops the PRTS/wiki catalogs + the
+ * TextTable string-key bridge + search corpus so the next read picks up new
+ * data after a refresh.
+ */
+function makeWorldviewSyncRunner(
+  localZip: string,
+  localRoot: string,
+): () => Promise<boolean> {
+  const archiveSpec = archiveSpecForDataset(WORLDVIEW, localZip, localRoot);
+
+  return async (): Promise<boolean> => {
+    const r = await syncReleaseArchive(archiveSpec);
+    logSyncResult("Worldview", r);
+    if (r.status === "updated") {
+      clearWorldviewCaches();
+    }
+    return shouldRetrySync(r.status);
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Startup entry point
 // ---------------------------------------------------------------------------
@@ -263,6 +289,37 @@ export async function runStartupSync(): Promise<void> {
         .then((result) => {
           if (result !== "done") {
             scheduleSyncRetry("Story CN", runStorySync);
+          }
+        }),
+    );
+  }
+
+  // Worldview
+  if (WORLDVIEW.requiredFiles.length === 0) {
+    log("WARN", "Worldview dataset has no requiredFiles; skipping sync.");
+  } else {
+    const worldviewRoot = join(cfg.dataPath, "worldview");
+    const localZip = join(
+      worldviewRoot,
+      "archives",
+      WORLDVIEW.assetName,
+    );
+    const runWorldviewSync = makeWorldviewSyncRunner(localZip, worldviewRoot);
+
+    startupTasks.push(
+      singleFlightSync("Worldview", runWorldviewSync)
+        .catch((err: unknown) => {
+          log(
+            "ERROR",
+            `Worldview sync threw unexpectedly: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+          return true;
+        })
+        .then((result) => {
+          if (result !== "done") {
+            scheduleSyncRetry("Worldview", runWorldviewSync);
           }
         }),
     );

@@ -8,6 +8,54 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 No changes yet.
 
+## [0.4.0] — 2026-06-29 — Worldbuilding (PRTS archive & in-game wiki)
+
+### Added
+
+- **Worldbuilding domain — the in-game lore system.** Exposes the PRTS
+  archive (documents/records/multimedia/investigations) and the in-game
+  encyclopedia (wiki entries cross-linked to lore documents), previously
+  completely inaccessible to creators. Four new `ef_*` tools (count 15 → 19):
+  - `ef_list_lore_categories` — browse the PRTS archive + wiki category trees
+  - `ef_search_lore` — regex search across all PRTS document bodies
+  - `ef_read_lore_document` — read one document's full resolved body
+  - `ef_get_wiki_entry` — read a wiki entry + follow its `prtsId` cross-link
+- **New data layer** mirroring the story domain's barrel split
+  (`worldviewCore`/`Categories`/`Documents`/`Search` + barrel facade). A
+  **RichContent bridge** (local to `worldviewCore.ts`) resolves PRTS document
+  bodies: `contentId` → `RichContentTable[contentId].contentList[]` → i18n.
+  Kept local so `texts.ts` stays hash-only by design.
+- **Wiki ↔ Prts cross-link navigation.** `WikiEntryData.prtsId` points into a
+  `PrtsDocument`; `ef_get_wiki_entry` surfaces the associated lore document,
+  and `ef_read_lore_document` reverse-lists wiki entries referencing it.
+- **New mirror Release** `endfield-worldview.zip` (v0.4.0,
+  `3aKHP/EndFieldGameData`) — 11 PRTS + 4 Wiki tables +
+  `RichContentTable.json` (~126KB). i18n body text reuses the v0.2.0 tables
+  bundle's `i18n/CN.json` (not re-bundled).
+
+### Fixed
+
+- **Bundled fallback now includes the worldview dataset.** `fetch-bundled-data.ts`
+  previously pulled only tables + story; the worldview bundle was missing, so
+  the npm package's offline fallback layer would have shipped without worldview
+  data (every offline install would see worldview tools report "unavailable").
+- **Wiki-entry cache invalidation.** `_wikiEntryData` (in `worldviewDocuments.ts`)
+  was not cleared by `clearDocumentCaches()` — stale wiki entry data would
+  persist after a sync refresh. Now reset alongside `_firstLvCategory`. (Found
+  by khpilot bot + subagent CR, PR #19.)
+- **`isEmptyLoc` numeric-id coercion.** The upstream "absent" marker
+  `{id:0, text:""}` arrives with `id` as a number (≤2^53 ids aren't quoted by
+  the int64-safe parser); a strict `=== "0"` comparison missed it, leaking the
+  literal "0" as a wiki description. Now coerces via `String()`. (Found by
+  subagent CR, PR #19.)
+
+### Decisions
+
+- **`listWikiGroups` casing** normalized to always return the canonical map
+  key (case-insensitive scan), fixing inconsistent casing between branches.
+- **Smoke test deferred** in the CD pipeline — the tool set is still shifting
+  pre-1.0; revisit once stabilized.
+
 ## [0.3.4] — 2026-06-29 — Sync multi-asset fix
 
 ### Fixed

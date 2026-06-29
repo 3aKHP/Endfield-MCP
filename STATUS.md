@@ -6,16 +6,16 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.4 | hotfix 版本（修复 sync 多资产兼容——`checkLatestRelease` 不再假设 `/releases/latest` 含所有资产，改为按 assetName 列表查找；区分网络错 vs 资产不存在；v0.4.0 镜像发独立 worldview 资产后曾导致 tables/story sync 误判 no_data），162 单测全绿 |
+| TypeScript（Bun） | 0.4.0 | 最新发布（v0.4 Worldbuilding——游戏内 PRTS 档案系统 + 百科，4 个新世界观工具；含 sync 多资产 hotfix），184 单测全绿 |
 
-- 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
+- 当前工具：19 个（6 Wiki + 5 Character + 4 Story + 4 Worldview）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
 - 兼容性预期：1.0 前工具名/必填参数可变；1.0 后冻结（参考 PRTS-MCP 政策）
 
 ## 当前分支
 
-- `main` — v0.3.4（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化 + v0.3.3 版本号 hotfix + v0.3.4 sync 多资产 hotfix，tag `v0.3.4`）
-- `dev` — 0.4.0-dev.0，与 main 同步后向前推进，作为 v0.4 Worldbuilding 的工作分支
+- `main` — v0.4.0（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化 + v0.3.3 版本号 hotfix + v0.3.4 sync 多资产 hotfix + v0.4.0 Worldbuilding 世界观域，tag `v0.4.0`，已发布 npm）
+- `dev` — 与 main 同步（v0.4.0 发布后），向前推进下一版本
 
 ## 数据源
 
@@ -24,6 +24,7 @@ _Last updated: 2026-06-29_
 | [endfield.wiki.gg](https://endfield.wiki.gg/api.php) | 世界观词条、阵营设定 | 实时 HTTP（浏览器 UA + Referer 绕 WAF） | ✅ v0.1 |
 | [3aKHP/EndFieldGameData](https://github.com/3aKHP/EndFieldGameData) `endfield-tables.zip` | 角色数值/敌人/装备/物品表格 + 5 语言本地化 | GitHub Release zip（自动同步 + 镜像级联 + bundled 兜底） | ✅ v0.2.0 |
 | [3aKHP/EndFieldGameData](https://github.com/3aKHP/EndFieldGameData) `endfield-story-CN.zip` | 剧情对话场景（9271 个场景，CN 全文本） | GitHub Release zip（自动同步，按需读 conv 文件） | ✅ v0.3.0 |
+| [3aKHP/EndFieldGameData](https://github.com/3aKHP/EndFieldGameData) `endfield-worldview.zip` | 游戏内 PRTS 档案 + 百科（11 Prts + 4 Wiki 表 + RichContentTable） | GitHub Release zip（自动同步 + bundled 兜底） | ✅ v0.4.0 |
 
 Wiki 内容以英文为主；调用方 LLM 负责桥接到用户语言。GameData 支持中文/英文/日文/繁中/韩文五种语言，工具描述与项目文档使用中文。
 
@@ -84,7 +85,7 @@ Endfield-MCP/
 │   │   │   └── http.ts          # Stateless Streamable HTTP（Bun.serve）
 │   │   └── utils/
 │   │       └── sanitizer.ts     # wikitext 清洗
-│   ├── tests/                   # bun:test（162 测试全绿）
+│   ├── tests/                   # bun:test（184 测试全绿）
 │   ├── scripts/
 │   │   ├── build-mirror-zip.ts  # 镜像 tables zip 打包（正斜杠 entry）
 │   │   ├── build-story-zip.ts   # 镜像 story zip 打包
@@ -121,7 +122,7 @@ Endfield-MCP/
 |--------|------|
 | `bun install` | ✅ |
 | `bun run typecheck` | ✅ 零错误 |
-| `bun test` | ✅ **162/162 通过** |
+| `bun test` | ✅ **184/184 通过** |
 | `bun run build`（tsc emit） | ✅ dist 完整 |
 | stdio transport | ✅ 15 工具全部注册 |
 | HTTP transport | ✅ `/health`、`/mcp POST`（SSE）、`GET`（405） |

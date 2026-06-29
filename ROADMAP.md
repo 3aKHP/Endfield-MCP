@@ -7,9 +7,9 @@ shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release
 
-- TypeScript: `0.3.4` — hotfix: release sync now lists releases and matches by asset name instead of assuming `/releases/latest` carries every asset (the v0.4.0 worldview Release made tables/story syncs report no_data). Dev tracks `0.4.0-dev.0` toward the Worldbuilding minor.
-- 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
-- 162 unit tests passing
+- TypeScript: `0.4.0` — Worldbuilding: in-game PRTS archive system (documents/records/multimedia/investigations) + in-game encyclopedia (wiki entries cross-linked to lore). Four new `ef_*` worldview tools (count 15 → 19). Backed by a new `endfield-worldview.zip` mirror Release. Dev tracks toward the next minor.
+- 19 public MCP tools (6 Wiki + 5 Character + 4 Story + 4 Worldview)
+- 184 unit tests passing
 - Single implementation: TypeScript / Bun
 - Production deployment: `mcp.4sljq.top/endfield/mcp` (走 mihomo 代理)
 - See `STATUS.md` for the verification matrix
@@ -55,23 +55,24 @@ shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 每个 minor 承载一个主数据域。版本顺序按同人创作价值排序，可能根据
 self-hosted mirror 实际落地情况调整。
 
-### 0.4 — Worldbuilding（世界观素材）
+### 0.4 — Worldbuilding（世界观素材）✅ 已发布
 
-Endfield 的核心世界观入口，目前完全不可访问。
+游戏内 PRTS 档案系统 + 百科——Endfield 的核心世界观入口，v0.4.0 起可用。
 
-**数据源**（需扩展 `TABLE_FILES` + 重新发镜像 Release）：
+**数据源**（新独立资产 `endfield-worldview.zip`，镜像 v0.4.0 Release）：
 
-- `Prts*.json`（~10 表）— 游戏内 PRTS 档案系统：文档、页面、笔记、
-  调查记录、分类
-- `WikiEntry*.json` + `WikiCategory*.json` + `WikiGroupTable.json` —
-  游戏内百科/百科全书
+- `Prts*.json`（11 表）— 游戏内 PRTS 档案系统：分类、一级条目组、文档/记录/多媒体、笔记、阅读词条、调查任务
+- `Wiki*.json`（4 表，叙事子集）— 游戏内百科：分类、组、条目表
+- `RichContentTable.json` — contentId → 多段正文富文本桥（string-key 解析）
 
-**工具**：
+**工具**（4 个，已实现）：
 
-- `ef_search_lore(pattern, category?)` — 全文检索世界观文档
-- `ef_read_lore_document(doc_id)` — 读取单个文档全文
-- `ef_list_lore_categories()` — 列出世界观分类
-- `ef_get_wiki_entry(entry_id)` — 读取百科词条
+- `ef_list_lore_categories()` — 浏览 PRTS + 百科分类结构
+- `ef_search_lore(pattern, max_results?)` — 跨全部 PRTS 文档正则搜索
+- `ef_read_lore_document(doc_id)` — 读取单个文档全文（RichContent 多段解析）
+- `ef_get_wiki_entry(entry_id)` — 读取百科条目 + Wiki↔Prts 交叉链接
+
+**已知技术债**：PrtsInvestigate（调查任务）/PrtsReading（阅读词条）/PrtsNote 的类型已定义但 reader 未消费——调查/阅读浏览功能留作后续增强（v0.4.x）。
 
 ### 0.5 — Character Life（角色日常）
 
