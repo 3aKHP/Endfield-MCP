@@ -171,8 +171,14 @@ function releaseZipError(spec: ReleaseSpec): string | null {
 // Release-based sync
 // ---------------------------------------------------------------------------
 
-const GITHUB_RELEASES_LATEST_URL =
-  "https://api.github.com/repos/{owner}/{repo}/releases/latest";
+// We list releases (newest first) rather than hitting /releases/latest.
+// The latter returns the single newest Release for the whole repo and assumes
+// it carries every asset — which breaks once a repo ships multiple
+// independent assets across different Releases (EndFieldGameData: tables zip
+// in v0.2.0, story zip in v0.3.0, worldview zip in v0.4.0). Listing lets us
+// pick the Release that actually contains the requested asset.
+const GITHUB_RELEASES_LIST_URL =
+  "https://api.github.com/repos/{owner}/{repo}/releases?per_page=30";
 
 /** Describes a GitHub Release asset to download as a local zip. */
 export interface ReleaseSpec {
@@ -219,33 +225,68 @@ async function saveReleaseMeta(
 }
 
 /**
- * Fetch the latest release tag and asset download URL.
- * Returns null on any network or API failure.
+ * Fetch the release tag and asset download URL for the requested asset.
+ *
+ * Lists the repo's releases (newest first) and returns the first Release
+ * that actually contains `spec.assetName`. We deliberately do NOT use the
+ * `/releases/latest` endpoint: that returns the single newest Release for the
+ * whole repo, which only carries *that* release's assets. Once a repo ships
+ * several independent assets across different Releases (tables/story/worldview),
+ * `/releases/latest` makes every non-latest asset look "missing" and breaks
+ * their syncs. Listing + asset-name matching is robust to that layout.
+ *
+ * Return / throw contract (load-bearing — `syncRelease` distinguishes the two):
+ *   - Returns `{tag, url}` when a Release carrying the asset is found.
+ *   - Returns `null` when the API responded but NO scanned Release has the
+ *     asset (genuine absence — caller must NOT retry via blind download).
+ *   - THROWS on network/API failure (caller treats as "unreachable" and may
+ *     fall back to blind download / cached data).
+ *
+ * This distinction matters because the blind-download fallback in `syncRelease`
+ * constructs a `releases/latest/download/<asset>` URL — which only makes sense
+ * when we genuinely couldn't reach the API, not when the API confirmed the
+ * asset is absent.
  */
 export async function checkLatestRelease(
   spec: ReleaseSpec,
   timeoutMs = 10_000,
 ): Promise<{ tag: string; url: string } | null> {
-  const url = GITHUB_RELEASES_LATEST_URL.replace(
+  const url = GITHUB_RELEASES_LIST_URL.replace(
     "{owner}",
     spec.owner,
   ).replace("{repo}", spec.repo);
-  try {
-    const res = await fetchCascading(
-      url,
-      { headers: githubHeaders() },
-      timeoutMs,
-    );
-    const data = (await res.json()) as {
-      tag_name: string;
-      assets: Array<{ name: string; browser_download_url: string }>;
-    };
-    const asset = data.assets.find((a) => a.name === spec.assetName);
-    if (!asset) return null;
-    return { tag: data.tag_name, url: asset.browser_download_url };
-  } catch {
-    return null;
+  // Network/API failure propagates as a throw (distinguished from "asset not
+  // found" → null below). syncRelease catches it to decide fallback behavior.
+  const res = await fetchCascading(
+    url,
+    { headers: githubHeaders() },
+    timeoutMs,
+  );
+  const data = (await res.json()) as Array<{
+    tag_name: string;
+    assets: Array<{ name: string; browser_download_url: string }>;
+  }>;
+  // Releases arrive newest-first; take the first carrying our asset.
+  // (An asset is only ever in one Release, so "first match" == "the
+  // Release that published it" — which is the freshest by definition.)
+  for (const release of data) {
+    const asset = release.assets.find((a) => a.name === spec.assetName);
+    if (asset) {
+      return { tag: release.tag_name, url: asset.browser_download_url };
+    }
   }
+  // Defensive: if we scanned a full page (per_page releases) and still didn't
+  // find the asset, the asset might live in a Release beyond this page. Warn
+  // so a misconfigured dataset spec (or a mirror that grew past 30 releases)
+  // doesn't fail silently as "asset not found". sync.ts deliberately doesn't
+  // depend on the logger module (it returns data; startupSync logs), so this
+  // uses console directly — it's a rare, forward-looking guard, not a hot path.
+  if (data.length >= 30) {
+    console.warn(
+      `[endfield-mcp/sync] Scanned ${data.length} releases (full page) for asset "${spec.assetName}" without a match — if the mirror has >30 releases, the asset may be on a later page. Consider raising per_page or paginating.`,
+    );
+  }
+  return null;
 }
 
 /**
@@ -326,43 +367,83 @@ export async function syncRelease(spec: ReleaseSpec): Promise<SyncResult> {
     };
   }
 
-  const latest = await checkLatestRelease(spec);
+  // checkLatestRelease throws on network/API failure, returns null only when
+  // the API confirmed no scanned Release carries the asset. We must treat
+  // these differently: a network failure warrants a blind-download fallback
+  // (the API might have the asset, we just couldn't reach it), whereas a
+  // confirmed "asset not found" does NOT (the blind URL hits the latest
+  // release's download path, which is exactly the wrong-release assumption
+  // the listing fix removed — retrying it would 404 pointlessly).
+  let latest: { tag: string; url: string } | null;
+  let networkFailed = false;
+  try {
+    latest = await checkLatestRelease(spec);
+  } catch {
+    latest = null;
+    networkFailed = true;
+  }
 
   if (latest === null) {
+    if (networkFailed) {
+      // Network/API unreachable — fall back to cache or blind download.
+      if (zipOk) {
+        return {
+          spec: dummySpec,
+          status: "offline_fallback",
+          commitSha: cache?.commitSha ?? null,
+          error: "Network unavailable",
+        };
+      }
+      // No zip and API unreachable — attempt blind download via the
+      // releases/latest/download/ shortcut (no GitHub API call; ghproxy and
+      // similar mirrors support this URL pattern). This is best-effort: the
+      // latest release may not carry this asset (the very case the listing
+      // fix handles when the API IS reachable), but with the API down it's
+      // our only way to bootstrap a first download through a mirror.
+      if (mirrorUrls().length > 0) {
+        const blindUrl = `https://github.com/${spec.owner}/${spec.repo}/releases/latest/download/${spec.assetName}`;
+        try {
+          await downloadReleaseAsset(spec, "unknown", blindUrl);
+          return {
+            spec: dummySpec,
+            status: "updated",
+            commitSha: "unknown",
+            error: null,
+          };
+        } catch (err) {
+          return {
+            spec: dummySpec,
+            status: "no_data",
+            commitSha: null,
+            error: errorMessage(err),
+          };
+        }
+      }
+      const error = existsSync(spec.localZip) && zipError
+        ? `Network unavailable and no cached zip; cached zip invalid: ${zipError}`
+        : "Network unavailable and no cached zip";
+      return { spec: dummySpec, status: "no_data", commitSha: null, error };
+    }
+    // API reachable but no scanned Release carries this asset. Do NOT attempt
+    // the blind download (it would hit the latest release's download path —
+    // the exact wrong-release assumption the listing fix removes; the API just
+    // confirmed the asset is absent). This usually means a misconfigured
+    // dataset spec (wrong assetName) or a mirror that hasn't published the
+    // asset yet. Fall back to cache if present, else no_data.
     if (zipOk) {
       return {
         spec: dummySpec,
         status: "offline_fallback",
         commitSha: cache?.commitSha ?? null,
-        error: "Network unavailable",
+        error: `Asset "${spec.assetName}" not found in any scanned Release`,
       };
     }
-    // No zip and API unreachable — attempt blind download via the
-    // releases/latest/download/ shortcut (no GitHub API call; ghproxy and
-    // similar mirrors support this URL pattern).
-    if (mirrorUrls().length > 0) {
-      const blindUrl = `https://github.com/${spec.owner}/${spec.repo}/releases/latest/download/${spec.assetName}`;
-      try {
-        await downloadReleaseAsset(spec, "unknown", blindUrl);
-        return {
-          spec: dummySpec,
-          status: "updated",
-          commitSha: "unknown",
-          error: null,
-        };
-      } catch (err) {
-        return {
-          spec: dummySpec,
-          status: "no_data",
-          commitSha: null,
-          error: errorMessage(err),
-        };
-      }
-    }
-    const error = existsSync(spec.localZip) && zipError
-      ? `Network unavailable and no cached zip; cached zip invalid: ${zipError}`
-      : "Network unavailable and no cached zip";
-    return { spec: dummySpec, status: "no_data", commitSha: null, error };
+    return {
+      spec: dummySpec,
+      status: "no_data",
+      commitSha: null,
+      error: `Asset "${spec.assetName}" not found in any scanned Release and no cached zip`,
+    };
   }
 
   const commitSha = latest.tag;
