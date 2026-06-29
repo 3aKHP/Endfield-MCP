@@ -293,15 +293,17 @@ jobs:
           # printf format-specifier risk), then the version line separately so
           # $VERSION is passed as a printf ARGUMENT, not spliced into the
           # format string. A corrupted tag containing '%' can't corrupt output.
+          # Port is 3000 (config.ts default for EF_TRANSPORT=http), NOT 5111
+          # (which is the production reverse-proxy port behind mcp.4sljq.top).
           {
             printf '\n---\n\n**Install**\n```bash\n'
-            printf '# Run directly (Streamable HTTP on :5111)\nnpx endfield-mcp\n\n'
+            printf '# Run directly (Streamable HTTP on :3000)\nnpx endfield-mcp\n\n'
             printf '# Or install globally\n'
           } >> release_notes.txt
           printf 'npm install -g endfield-mcp@%s\n' "$VERSION" >> release_notes.txt
           {
             printf '```\n\n'
-            printf 'MCP endpoint: `http://localhost:5111/mcp` (set EF_TRANSPORT=http)\n'
+            printf 'MCP endpoint: `http://localhost:3000/mcp` (set EF_TRANSPORT=http)\n'
           } >> release_notes.txt
 
       - name: Create GitHub Release
