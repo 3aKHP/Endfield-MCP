@@ -188,10 +188,17 @@ export function readWikiEntry(entryId: string): WikiEntryView | null {
   };
 }
 
-/** True when a LocalizedText is the upstream "absent" marker ({id:0, text:""}). */
-function isEmptyLoc(loc: { id: string; text: string } | undefined): boolean {
+/**
+ * True when a LocalizedText is the upstream "absent" marker ({id:0, text:""}).
+ *
+ * `id` is coerced via `String()` because readJsonInt64Safe leaves small ids
+ * (≤2^53) as bare JSON numbers, so `desc.id` can arrive as the number `0`
+ * rather than the string `"0"`. A strict `=== "0"` would miss the numeric
+ * form — the same int64/coercion trap STYLE.md's "已知陷阱" warns about.
+ */
+function isEmptyLoc(loc: { id: string | number; text: string } | undefined): boolean {
   if (!loc) return true;
-  return loc.text === "" && (loc.id === "0" || loc.id === "");
+  return loc.text === "" && (String(loc.id) === "0" || loc.id === "");
 }
 
 /**

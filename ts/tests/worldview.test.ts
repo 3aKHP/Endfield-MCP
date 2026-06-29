@@ -374,6 +374,9 @@ describe("readWikiEntry", () => {
     expect(entry!.groupName).toBe("动物类");
     expect(entry!.prtsId).toBe("nar_doc_alpha");
     expect(entry!.refMonsterTemplateId).toBe("eny_0001");
+    // desc:{id:0} (numeric — the int64-safe parser leaves ≤2^53 as numbers)
+    // must resolve to "" not the literal "0". Guards isEmptyLoc coercion.
+    expect(entry!.description).toBe("");
   });
 
   it("returns null prtsId when no cross-link exists", () => {
