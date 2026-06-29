@@ -116,25 +116,28 @@ export function listWikiCategories(): WikiCategoryView[] {
 /**
  * List wiki groups within a category.
  *
- * Returns an empty array if the category id is unknown.
+ * Returns an empty array if the category id is unknown. Matching is
+ * case-insensitive, but the returned `categoryId` is always the canonical
+ * casing from the data (the actual map key), so callers see a stable value
+ * regardless of how they cased their input.
  */
 export function listWikiGroups(categoryId: string): WikiGroupView[] {
-  const lower = categoryId.toLowerCase();
-  const list = wikiGroups().get(lower);
-  if (!list) {
-    // wikiGroups keys are stored verbatim (e.g. "wiki_type_monster"); also
-    // try an exact match in case the caller passed the canonical casing.
-    const exact = wikiGroups().get(categoryId);
-    if (!exact) return [];
-    return exact.map((g) => ({
-      groupId: g.groupId,
-      categoryId,
-      displayName: resolveText(g.groupName, undefined, g.groupId),
-    }));
+  const groups = wikiGroups();
+  // Find the canonical key with a case-insensitive scan (wikiGroups keys are
+  // stored verbatim, e.g. "wiki_type_monster"). This avoids returning two
+  // different casings depending on which branch resolved.
+  let canonicalKey: string | null = null;
+  for (const key of groups.keys()) {
+    if (key.toLowerCase() === categoryId.toLowerCase()) {
+      canonicalKey = key;
+      break;
+    }
   }
+  const list = canonicalKey !== null ? groups.get(canonicalKey) : undefined;
+  if (!list || canonicalKey === null) return [];
   return list.map((g) => ({
     groupId: g.groupId,
-    categoryId: lower,
+    categoryId: canonicalKey,
     displayName: resolveText(g.groupName, undefined, g.groupId),
   }));
 }

@@ -94,9 +94,10 @@ function firstLvCategoryIndex(): Map<string, string> {
   return map;
 }
 
-/** Reset the private index. Called by the barrel orchestrator on sync. */
+/** Reset the private caches. Called by the barrel orchestrator on sync. */
 export function clearDocumentCaches(): void {
   _firstLvCategory = null;
+  _wikiEntryData = null;
 }
 
 function toView(item: PrtsItem): LoreDocumentView {

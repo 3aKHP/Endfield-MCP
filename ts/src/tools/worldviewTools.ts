@@ -17,7 +17,6 @@ import { z } from "zod";
 import {
   hasWorldviewData,
   listLoreCategories as _listLoreCategories,
-  listLoreGroups as _listLoreGroups,
   listWikiCategories as _listWikiCategories,
   readLoreDocument as _readLoreDocument,
   readWikiEntry as _readWikiEntry,

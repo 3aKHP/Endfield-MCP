@@ -181,8 +181,10 @@ const WIKI_GROUP = {
 
 const WIKI_ENTRY_DATA = {
   // Cross-linked: prtsId points at nar_doc_alpha.
+  // Field is `id` (matches upstream WikiEntryDataTable shape, NOT `entryId`
+  // — the dict key and the `id` field carry the same value upstream).
   wiki_eny_0001_linked: {
-    entryId: "wiki_eny_0001_linked",
+    id: "wiki_eny_0001_linked",
     groupId: "wiki_group_animal",
     prtsId: "nar_doc_alpha",
     desc: { id: 0, text: "" },
@@ -191,7 +193,7 @@ const WIKI_ENTRY_DATA = {
   },
   // No prtsId — exercises the null cross-link path.
   wiki_eny_0002_plain: {
-    entryId: "wiki_eny_0002_plain",
+    id: "wiki_eny_0002_plain",
     groupId: "wiki_group_animal",
     desc: { id: 0, text: "" },
     order: 2,
@@ -366,6 +368,9 @@ describe("readWikiEntry", () => {
   it("resolves a wiki entry with its group name + prtsId cross-link", () => {
     const entry = readWikiEntry("wiki_eny_0001_linked");
     expect(entry).not.toBeNull();
+    // entryId must be populated from the upstream `id` field (not undefined) —
+    // guards against the fixture/reader field-name drift a CR caught.
+    expect(entry!.entryId).toBe("wiki_eny_0001_linked");
     expect(entry!.groupName).toBe("动物类");
     expect(entry!.prtsId).toBe("nar_doc_alpha");
     expect(entry!.refMonsterTemplateId).toBe("eny_0001");
@@ -408,5 +413,30 @@ describe("cache invalidation", () => {
     // After clearing, the re-read sees the updated file.
     clearWorldviewCaches();
     expect(listLoreCategories()).toHaveLength(1);
+  });
+
+  it("clearWorldviewCaches drops the wiki-entry cache (readWikiEntry re-reads)", () => {
+    // First access populates the _wikiEntryData cache.
+    expect(readWikiEntry("wiki_eny_0002_plain")?.entryId).toBe(
+      "wiki_eny_0002_plain",
+    );
+    // Mutate the fixture: rename the entry id.
+    const renamed = {
+      ...WIKI_ENTRY_DATA,
+      wiki_eny_0002_renamed: { ...WIKI_ENTRY_DATA["wiki_eny_0002_plain"]!, id: "wiki_eny_0002_renamed" },
+    };
+    delete (renamed as Record<string, unknown>)["wiki_eny_0002_plain"];
+    writeFileSync(
+      join(TMP, "wiki", "WikiEntryDataTable.json"),
+      JSON.stringify(renamed),
+    );
+    // Without clearing, the stale cache still serves the old id.
+    expect(readWikiEntry("wiki_eny_0002_plain")).not.toBeNull();
+    // After clearing, the re-read sees the renamed entry.
+    clearWorldviewCaches();
+    expect(readWikiEntry("wiki_eny_0002_plain")).toBeNull();
+    expect(readWikiEntry("wiki_eny_0002_renamed")?.entryId).toBe(
+      "wiki_eny_0002_renamed",
+    );
   });
 });
