@@ -7,9 +7,9 @@ shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 ## Current Release
 
-- TypeScript: `0.3.3` — hotfix: server version now read from package.json (v0.3.2's `SERVER_VERSION` literal was stuck at 0.3.1). Dev tracks `0.4.0-dev.0` toward the Worldbuilding minor.
+- TypeScript: `0.3.4` — hotfix: release sync now lists releases and matches by asset name instead of assuming `/releases/latest` carries every asset (the v0.4.0 worldview Release made tables/story syncs report no_data). Dev tracks `0.4.0-dev.0` toward the Worldbuilding minor.
 - 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
-- 157 unit tests passing
+- 162 unit tests passing
 - Single implementation: TypeScript / Bun
 - Production deployment: `mcp.4sljq.top/endfield/mcp` (走 mihomo 代理)
 - See `STATUS.md` for the verification matrix
@@ -139,6 +139,7 @@ Patches 只做 bug 修复、基建、不扩展能力面。
 | **0.3.1** | 技术债清理 | (1) ✅ npm Trusted Publishing 迁移（PR #7 + PR #12，Node 24 实发布验证通过）——npm 侧配 trusted publisher，cd.yml `--provenance` + Node 24（OIDC 要求 npm ≥ 11.5.1；Node 22 的 OIDC PUT 不完整返 E404，Node 24 是首个捆绑 npm 11.x 的 LTS），去掉 NPM_TOKEN；(2) ✅ S7: `ef_search_characters` 加 `.max(200)` ReDoS 防护（PR #5）；(3) ✅ Story bundled data（PR #6）——19MB story bundle 进 npm 包，离线兜底；(4) ✅ Mirror 消费侧契约补齐（PR #8，`docs/admin/mirror-release-workflow.md`）。跨仓库的 EndFieldGameData 自动重导出 CI 属该仓库 scope，随其 self-hosted runner 单独推进，不计入本仓库版本 |
 | **0.3.2** | 体验优化 + 代码债清理 | (1) ✅ R1: `{id, text}` 本地化类型统一——删除 `RecordField` / `LocalizedField` / `CvField` 三个私有重复，统一为 `texts.ts` 的 `LocalizedText`，消除 4 处 `as` 强转（PR #13）；(2) 🚫 R2 枚举动态化 wontfix（评估理由见 CHANGELOG Decisions）；(3) ✅ 工具描述优化：15 个 `ef_*` 工具补强"适用场景"逆向锚点 + 消除 `get_character_*` 三件套同名前缀稀释 + 收紧工具链引导，提升客户端工具选择阶段 RAG 召回（PR #15）；(4) 🔄 分页标准化 + 结构化错误已评估推后——两者预设 JSON 输出，与项目 markdown text content 方向不符，且当前数据量无需分页、结构化错误码反降 LLM 友好度，归入 2.0 boundary 的 `output_format` 选择器议题统一决策 |
 | **0.3.3** | hotfix | ✅ `server.ts` 版本号脱钩修复——`SERVER_VERSION` 从硬编码字面量改为动态读取 `package.json`（`import pkg from "../package.json"`）。v0.3.2 发布时漏改字面量，导致生产日志和 MCP 握手报 "0.3.1"。根因是版本号在两处独立维护，现统一到 package.json 单一源。更新生产部署时发现 |
+| **0.3.4** | hotfix | ✅ sync 多资产兼容修复——`checkLatestRelease` 从 `/releases/latest`（返回整个仓库最新 Release，假设其含所有资产）改为 `/releases` 列表按 `assetName` 匹配。根因：v0.4.0 镜像发独立 worldview 资产后，tables/story sync 去最新 Release（v0.4.0）找各自资产失败 → no_data。开发 v0.4 live smoke 时发现 |
 
 > **ReDoS 防护的现实边界**：S7 的 `.max(200)` 字符上限是对两个正则接受工具（`ef_search_characters` / `ef_search_stories`）的**输入复杂度边界**，缓解最常见的长模式注入。它**不消除** ReDoS——短病态模式（如 `^(a?){20}a{20}$` 仅 16 字符）仍可触发指数级回溯。若未来需要真正的 ReDoS 免疫，需在 data 层引入非回溯引擎或显式复杂度检查。当前方案是与现有 story 工具对齐的基线防护。
 

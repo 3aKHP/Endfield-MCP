@@ -8,6 +8,46 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 No changes yet.
 
+## [0.3.4] — 2026-06-29 — Sync multi-asset fix
+
+### Fixed
+
+- **Release sync no longer assumes `/releases/latest` carries every asset.**
+  `sync.ts:checkLatestRelease` used GitHub's `/releases/latest` endpoint,
+  which returns the single newest Release for the whole repo and assumes it
+  contains every asset. That assumption held while the mirror shipped one
+  asset type per Release, but broke the moment `endfield-worldview.zip`
+  (v0.4.0) became the newest Release: the tables and story syncs then went
+  looking for their assets in the worldview Release, found none, and reported
+  `no_data`. Any production restart after the v0.4.0 mirror release would
+  have lost tables/story data on the next sync. Now lists the repo's releases
+  (newest first) and picks the first Release that actually contains the
+  requested `assetName` — robust to any multi-asset Release layout.
+
+- **`checkLatestRelease` now distinguishes network failure from genuine
+  absence.** It throws on network/API errors and returns `null` only when the
+  API confirmed no scanned Release carries the asset. `syncRelease` uses this
+  to gate the blind-download fallback: the `releases/latest/download/<asset>`
+  shortcut now fires only when the API was unreachable (where it's our only
+  bootstrap path through a mirror), never when the API confirmed the asset is
+  absent (where it would 404 against the wrong release). The distinct error
+  messages also make a misconfigured `assetName` diagnosable instead of
+  masquerading as "Network unavailable". Addresses CR findings (subagent +
+  khpilot bot, PR #18).
+
+- **Defensive `per_page=30` guard.** If a full page of releases is scanned
+  without a match, a warning is emitted so an asset on a later page (or a
+  mirror that grew past 30 releases) doesn't fail silently as "not found".
+  Forward-looking — the mirror currently ships 3 releases.
+
+### Tests
+
+- **`checkLatestRelease` now has unit coverage** (`tests/sync.test.ts`, 5
+  tests, network-free via `globalThis.fetch` stubs). Locks in the multi-asset
+  matching contract (returns the Release carrying the asset, not the newest;
+  null on confirmed absence; throw on network failure) — exactly the
+  regression that would have caught the original bug. Test count 157 → 162.
+
 ## [0.3.3] — 2026-06-29 — Server-version sync fix
 
 ### Fixed
