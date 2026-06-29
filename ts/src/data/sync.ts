@@ -171,8 +171,14 @@ function releaseZipError(spec: ReleaseSpec): string | null {
 // Release-based sync
 // ---------------------------------------------------------------------------
 
-const GITHUB_RELEASES_LATEST_URL =
-  "https://api.github.com/repos/{owner}/{repo}/releases/latest";
+// We list releases (newest first) rather than hitting /releases/latest.
+// The latter returns the single newest Release for the whole repo and assumes
+// it carries every asset — which breaks once a repo ships multiple
+// independent assets across different Releases (EndFieldGameData: tables zip
+// in v0.2.0, story zip in v0.3.0, worldview zip in v0.4.0). Listing lets us
+// pick the Release that actually contains the requested asset.
+const GITHUB_RELEASES_LIST_URL =
+  "https://api.github.com/repos/{owner}/{repo}/releases?per_page=30";
 
 /** Describes a GitHub Release asset to download as a local zip. */
 export interface ReleaseSpec {
@@ -219,14 +225,23 @@ async function saveReleaseMeta(
 }
 
 /**
- * Fetch the latest release tag and asset download URL.
- * Returns null on any network or API failure.
+ * Fetch the release tag and asset download URL for the requested asset.
+ *
+ * Lists the repo's releases (newest first) and returns the first Release
+ * that actually contains `spec.assetName`. We deliberately do NOT use the
+ * `/releases/latest` endpoint: that returns the single newest Release for the
+ * whole repo, which only carries *that* release's assets. Once a repo ships
+ * several independent assets across different Releases (tables/story/worldview),
+ * `/releases/latest` makes every non-latest asset look "missing" and breaks
+ * their syncs. Listing + asset-name matching is robust to that layout.
+ *
+ * Returns null on any network/API failure or when no Release has the asset.
  */
 export async function checkLatestRelease(
   spec: ReleaseSpec,
   timeoutMs = 10_000,
 ): Promise<{ tag: string; url: string } | null> {
-  const url = GITHUB_RELEASES_LATEST_URL.replace(
+  const url = GITHUB_RELEASES_LIST_URL.replace(
     "{owner}",
     spec.owner,
   ).replace("{repo}", spec.repo);
@@ -236,13 +251,20 @@ export async function checkLatestRelease(
       { headers: githubHeaders() },
       timeoutMs,
     );
-    const data = (await res.json()) as {
+    const data = (await res.json()) as Array<{
       tag_name: string;
       assets: Array<{ name: string; browser_download_url: string }>;
-    };
-    const asset = data.assets.find((a) => a.name === spec.assetName);
-    if (!asset) return null;
-    return { tag: data.tag_name, url: asset.browser_download_url };
+    }>;
+    // Releases arrive newest-first; take the first carrying our asset.
+    // (An asset is only ever in one Release, so "first match" == "the
+    // Release that published it" — which is the freshest by definition.)
+    for (const release of data) {
+      const asset = release.assets.find((a) => a.name === spec.assetName);
+      if (asset) {
+        return { tag: release.tag_name, url: asset.browser_download_url };
+      }
+    }
+    return null;
   } catch {
     return null;
   }

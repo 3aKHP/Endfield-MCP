@@ -8,6 +8,22 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 No changes yet.
 
+## [0.3.4] — 2026-06-29 — Sync multi-asset fix
+
+### Fixed
+
+- **Release sync no longer assumes `/releases/latest` carries every asset.**
+  `sync.ts:checkLatestRelease` used GitHub's `/releases/latest` endpoint,
+  which returns the single newest Release for the whole repo and assumes it
+  contains every asset. That assumption held while the mirror shipped one
+  asset type per Release, but broke the moment `endfield-worldview.zip`
+  (v0.4.0) became the newest Release: the tables and story syncs then went
+  looking for their assets in the worldview Release, found none, and reported
+  `no_data`. Any production restart after the v0.4.0 mirror release would
+  have lost tables/story data on the next sync. Now lists the repo's releases
+  (newest first) and picks the first Release that actually contains the
+  requested `assetName` — robust to any multi-asset Release layout.
+
 ## [0.3.3] — 2026-06-29 — Server-version sync fix
 
 ### Fixed

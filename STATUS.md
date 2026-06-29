@@ -6,7 +6,7 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.3 | hotfix 版本（修复 `server.ts` 版本字面量与 `package.json` 脱钩——0.3.2 曾报 0.3.1；现动态读取），157 单测全绿 |
+| TypeScript（Bun） | 0.3.4 | hotfix 版本（修复 sync 多资产兼容——`checkLatestRelease` 不再假设 `/releases/latest` 含所有资产，改为按 assetName 列表查找；v0.4.0 镜像发独立 worldview 资产后曾导致 tables/story sync 误判 no_data），157 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -14,7 +14,7 @@ _Last updated: 2026-06-29_
 
 ## 当前分支
 
-- `main` — v0.3.3（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化 + v0.3.3 版本号 hotfix，tag `v0.3.3`）
+- `main` — v0.3.4（含 v0.1 骨架 + v0.2 GameData + v0.3 创作工具 + v0.3.1 技术债清理 + v0.3.2 代码债/描述优化 + v0.3.3 版本号 hotfix + v0.3.4 sync 多资产 hotfix，tag `v0.3.4`）
 - `dev` — 0.4.0-dev.0，与 main 同步后向前推进，作为 v0.4 Worldbuilding 的工作分支
 
 ## 数据源
