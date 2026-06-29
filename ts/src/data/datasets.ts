@@ -215,6 +215,61 @@ export const STORY_CN: ReleaseDatasetSpec = {
   requiredFiles: STORY_REQUIRED_FILES,
 };
 
+/**
+ * Worldview bundle — the v0.4.0 dataset.
+ *
+ * In-game PRTS archive system (documents/records/multimedia/investigations)
+ * plus the in-game encyclopedia (wiki entries/categories/groups). Schema
+ * differs from the tables/story bundles in one way: most Prts entries carry
+ * a `contentId` that is a **string key** (e.g. "text_v0d8_10"), not a direct
+ * int64 hash. That key resolves through the root-level RichContentTable.json:
+ * `RichContentTable[contentId]` = `{title: {id, text}, contentList: [{content: {id, text}}, ...]}`,
+ * and each segment's `content.id` is an int64 hash looked up in i18n/CN.json
+ * (shipped in the v0.2.0 tables bundle). The i18n table is intentionally NOT
+ * re-bundled here.
+ *
+ * Layout (see local_dev/docs/worldview-mirror-build.md for the build spec):
+ *
+ * ```
+ * endfield-worldview.zip
+ * ├── prts/   (11 narrative tables)
+ * ├── wiki/   (4 encyclopedia tables — narrative subset only)
+ * └── RichContentTable.json   (contentId → {title, contentList[]} bridge, root-level)
+ * ```
+ *
+ * ~2.7MB raw. The 6 mechanistic Wiki tables (craft/drop/tutorial) are
+ * deliberately excluded — v0.4 is lore-first (ROADMAP decision principle).
+ */
+export const WORLDVIEW_REQUIRED_FILES: readonly string[] = [
+  // PRTS narrative hierarchy
+  "prts/PrtsCategory.json",
+  "prts/PrtsPage.json",
+  "prts/PrtsFirstLv.json",
+  "prts/PrtsAllItem.json",
+  "prts/PrtsDocument.json",
+  "prts/PrtsRecord.json",
+  "prts/PrtsMultimedia.json",
+  "prts/PrtsNote.json",
+  "prts/PrtsReading.json",
+  "prts/PrtsInvestigate.json",
+  "prts/PrtsInvestigateCategory.json",
+  // In-game encyclopedia (narrative subset)
+  "wiki/WikiCategoryTable.json",
+  "wiki/WikiGroupTable.json",
+  "wiki/WikiEntryTable.json",
+  "wiki/WikiEntryDataTable.json",
+  // contentId → {title, contentList[]} rich-content bridge (shared resolver, root-level)
+  "RichContentTable.json",
+] as const;
+
+export const WORLDVIEW: ReleaseDatasetSpec = {
+  datasetId: "worldview",
+  owner: MIRROR_OWNER,
+  repo: MIRROR_REPO,
+  assetName: "endfield-worldview.zip",
+  requiredFiles: WORLDVIEW_REQUIRED_FILES,
+};
+
 // ---------------------------------------------------------------------------
 // Zip validation
 // ---------------------------------------------------------------------------

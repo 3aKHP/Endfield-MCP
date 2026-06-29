@@ -6,7 +6,17 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-No changes yet.
+### Added
+
+- **Worldbuilding domain (v0.4 in progress).** In-game PRTS archive system
+  (documents/records/multimedia/investigations) + in-game encyclopedia
+  (wiki entries cross-linked to lore documents). Four new `ef_*` tools:
+  `ef_list_lore_categories`, `ef_search_lore`, `ef_read_lore_document`,
+  `ef_get_wiki_entry` (tool count 15 → 19). Backed by a new
+  `endfield-worldview.zip` mirror Release (v0.4.0). A RichContent bridge
+  (local to `worldviewCore.ts`) resolves PRTS document bodies: `contentId`
+  → `RichContentTable[contentId].contentList[]` → i18n. Schema discovered
+  by inspecting the local `endfield_research_kit` export.
 
 ## [0.3.4] — 2026-06-29 — Sync multi-asset fix
 

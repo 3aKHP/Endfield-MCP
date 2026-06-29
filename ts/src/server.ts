@@ -25,9 +25,11 @@ import { bindWikiConfig } from "./api/endfieldWiki.js";
 import { registerWikiTools } from "./tools/wikiTools.js";
 import { registerGamedataTools } from "./tools/gamedataTools.js";
 import { registerStoryTools } from "./tools/storyTools.js";
+import { registerWorldviewTools } from "./tools/worldviewTools.js";
 import { bindCharacterStore } from "./data/characters.js";
 import { bindTextStore } from "./data/texts.js";
 import { bindStoryStore } from "./data/story.js";
+import { bindWorldviewStore } from "./data/worldview.js";
 import { DirectoryStore, FallbackStore, type JsonStore } from "./data/stores.js";
 import { runStartupSync } from "./startupSync.js";
 import { runStdio } from "./transports/stdio.js";
@@ -66,6 +68,7 @@ function createMcpServer(): McpServer {
   registerWikiTools(server);
   registerGamedataTools(server);
   registerStoryTools(server);
+  registerWorldviewTools(server);
   return server;
 }
 
@@ -138,6 +141,31 @@ async function main(): Promise<void> {
     log(
       "INFO",
       `Story data not yet available — both layers absent. Story tools will report "no data" until the v0.3.0 mirror sync completes.`,
+    );
+  }
+
+  // Worldview store: same unconditional FallbackStore pattern as story.
+  // The worldview bundle (endfield-worldview.zip, v0.4) holds the in-game
+  // PRTS archive + encyclopedia. Note this store also resolves PRTS body
+  // text via the tables bundle's i18n (bound above), so worldview depends
+  // on bindTextStore having run — ordering is correct here.
+  const worldviewSynced = join(cfg.dataPath, "worldview");
+  const worldviewBundled = join(cfg.bundledDataPath, "worldview");
+  const worldviewSyncedExists = existsSync(worldviewSynced);
+  const worldviewBundledExists = existsSync(worldviewBundled);
+  const worldviewStore: JsonStore = new FallbackStore(
+    new DirectoryStore(worldviewSynced),
+    new DirectoryStore(worldviewBundled),
+  );
+  bindWorldviewStore(worldviewStore);
+  log(
+    "INFO",
+    `Worldview store: FallbackStore(synced=${worldviewSynced}${worldviewSyncedExists ? "" : " [absent]"}, bundled=${worldviewBundled}${worldviewBundledExists ? "" : " [absent]"})`,
+  );
+  if (!worldviewSyncedExists && !worldviewBundledExists) {
+    log(
+      "INFO",
+      `Worldview data not yet available — both layers absent. Worldview tools will report "no data" until the v0.4.0 mirror sync completes.`,
     );
   }
 
