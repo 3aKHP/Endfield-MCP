@@ -9,7 +9,7 @@ shipped features, see the TypeScript CHANGELOG (`ts/CHANGELOG.md`).
 
 - TypeScript: `0.3.4` — hotfix: release sync now lists releases and matches by asset name instead of assuming `/releases/latest` carries every asset (the v0.4.0 worldview Release made tables/story syncs report no_data). Dev tracks `0.4.0-dev.0` toward the Worldbuilding minor.
 - 15 public MCP tools (6 Wiki + 5 Character + 4 Story)
-- 157 unit tests passing
+- 162 unit tests passing
 - Single implementation: TypeScript / Bun
 - Production deployment: `mcp.4sljq.top/endfield/mcp` (走 mihomo 代理)
 - See `STATUS.md` for the verification matrix

@@ -40,6 +40,14 @@ No changes yet.
   mirror that grew past 30 releases) doesn't fail silently as "not found".
   Forward-looking — the mirror currently ships 3 releases.
 
+### Tests
+
+- **`checkLatestRelease` now has unit coverage** (`tests/sync.test.ts`, 5
+  tests, network-free via `globalThis.fetch` stubs). Locks in the multi-asset
+  matching contract (returns the Release carrying the asset, not the newest;
+  null on confirmed absence; throw on network failure) — exactly the
+  regression that would have caught the original bug. Test count 157 → 162.
+
 ## [0.3.3] — 2026-06-29 — Server-version sync fix
 
 ### Fixed

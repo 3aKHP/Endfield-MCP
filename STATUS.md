@@ -6,7 +6,7 @@ _Last updated: 2026-06-29_
 
 | 实现 | 版本 | 状态 |
 |------|------|------|
-| TypeScript（Bun） | 0.3.4 | hotfix 版本（修复 sync 多资产兼容——`checkLatestRelease` 不再假设 `/releases/latest` 含所有资产，改为按 assetName 列表查找；v0.4.0 镜像发独立 worldview 资产后曾导致 tables/story sync 误判 no_data），157 单测全绿 |
+| TypeScript（Bun） | 0.3.4 | hotfix 版本（修复 sync 多资产兼容——`checkLatestRelease` 不再假设 `/releases/latest` 含所有资产，改为按 assetName 列表查找；区分网络错 vs 资产不存在；v0.4.0 镜像发独立 worldview 资产后曾导致 tables/story sync 误判 no_data），162 单测全绿 |
 
 - 当前工具：15 个（6 Wiki + 5 Character + 4 Story）
 - 单实现：仅 TypeScript / Bun（不搞双实现——TS 一套覆盖 stdio + HTTP）
@@ -84,7 +84,7 @@ Endfield-MCP/
 │   │   │   └── http.ts          # Stateless Streamable HTTP（Bun.serve）
 │   │   └── utils/
 │   │       └── sanitizer.ts     # wikitext 清洗
-│   ├── tests/                   # bun:test（157 测试全绿）
+│   ├── tests/                   # bun:test（162 测试全绿）
 │   ├── scripts/
 │   │   ├── build-mirror-zip.ts  # 镜像 tables zip 打包（正斜杠 entry）
 │   │   ├── build-story-zip.ts   # 镜像 story zip 打包
@@ -121,7 +121,7 @@ Endfield-MCP/
 |--------|------|
 | `bun install` | ✅ |
 | `bun run typecheck` | ✅ 零错误 |
-| `bun test` | ✅ **157/157 通过** |
+| `bun test` | ✅ **162/162 通过** |
 | `bun run build`（tsc emit） | ✅ dist 完整 |
 | stdio transport | ✅ 15 工具全部注册 |
 | HTTP transport | ✅ `/health`、`/mcp POST`（SSE）、`GET`（405） |
